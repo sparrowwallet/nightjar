@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+}
+
+group 'com.sparrowwallet.nightjar'
+version '0.1'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation ('org.bouncycastle:bcprov-jdk15on:1.64') {
+        exclude group: 'org.hamcrest', module: 'hamcrest-core'
+    }
+    implementation ('com.google.protobuf:protobuf-java:2.6.1')
+    implementation ('com.google.guava:guava:28.2-jre')
+    implementation ('com.lambdaworks:scrypt:1.4.0')
+    implementation ('org.springframework:spring-websocket:5.2.2.RELEASE')
+    implementation ('org.springframework:spring-messaging:5.2.2.RELEASE')
+    implementation ('org.eclipse.jetty.websocket:websocket-client:9.4.19.v20190610')
+    implementation ('net.sourceforge.streamsupport:streamsupport:1.7.0')
+    implementation ('org.apache.commons:commons-text:1.2')
+    implementation ('commons-codec:commons-codec:1.12')
+    implementation ('com.squareup.okhttp:okhttp:2.7.5')
+    implementation ('net.jcip:jcip-annotations:1.0')
+    implementation ('com.fasterxml.jackson.core:jackson-databind:2.10.1')
+    implementation ('org.json:json:20180130')
+    implementation ('io.reactivex.rxjava2:rxjava:2.2.15')
+    implementation ('org.slf4j:slf4j-api:1.7.30')
+    implementation ('com.auth0:java-jwt:3.8.1')
+    implementation ('com.github.zeroleak:throwing-supplier:1.0.3')
+    implementation ('ch.qos.logback:logback-classic:1.2.3') {
+        exclude group: 'org.hamcrest', module: 'hamcrest-core'
+        exclude group: 'org.slf4j'
+    }
+    implementation ('org.hibernate:hibernate-validator:6.0.17.Final')
+}
