@@ -3,23 +3,18 @@ package com.samourai.wallet.hd;
 import com.samourai.wallet.bip47.rpc.BIP47Wallet;
 import com.samourai.wallet.util.FormatsUtilGeneric;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.crypto.DeterministicKey;
-import org.bitcoinj.crypto.HDKeyDerivation;
 import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.crypto.MnemonicException;
 
 public class HD_WalletFactoryGeneric {
   public static final String BIP39_ENGLISH_SHA256 = "ad90bf3beb7b0eb7e5acd74727dc0da96e0a280a258354e7293fb7e211ac03db";
-  public static final String BIP39_ENGLISH_FILENAME = "/BIP39/en.txt";
+  public static final String BIP39_ENGLISH_FILENAME = "/mnemonic/wordlist/english.txt";
 
   private MnemonicCode mc;
 

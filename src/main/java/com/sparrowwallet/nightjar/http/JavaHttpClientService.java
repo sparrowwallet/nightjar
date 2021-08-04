@@ -22,11 +22,11 @@ public class JavaHttpClientService implements IHttpClientService {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final Map<HttpUsage, JavaHttpClient> httpClients;
-    private final Whirlpool whirlpool;
+    private final HostAndPort torProxy;
 
-    public JavaHttpClientService(Whirlpool whirlpool) {
+    public JavaHttpClientService(HostAndPort torProxy) {
         this.httpClients = new ConcurrentHashMap<>();
-        this.whirlpool = whirlpool;
+        this.torProxy = torProxy;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class JavaHttpClientService implements IHttpClientService {
     }
 
     private JavaHttpClient computeHttpClient(HttpUsage httpUsage) {
-        HttpClient httpClient = computeHttpClient(whirlpool.getTorProxy());
+        HttpClient httpClient = computeHttpClient(torProxy);
         return new JavaHttpClient(httpUsage, httpClient, 30000);
     }
 

@@ -28,6 +28,10 @@ public class BackendApi implements OAuthApi {
   private String urlBackend;
   private Optional<OAuthManager> oAuthManager;
 
+  public BackendApi(IBackendClient httpClient, String urlBackend) {
+    this(httpClient, urlBackend, null);
+  }
+
   public BackendApi(IBackendClient httpClient, String urlBackend, Optional<OAuthManager> oAuthManager) {
     this.httpClient = httpClient;
     this.urlBackend = urlBackend;

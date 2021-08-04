@@ -42,7 +42,7 @@ public class Whirlpool {
         torProxy = HostAndPort.fromParts(torHost, torPort);
 
         whirlpoolServer = WhirlpoolServer.valueOf(network);
-        httpClientService = new JavaHttpClientService(this);
+        httpClientService = new JavaHttpClientService(this.getTorProxy());
         stompClientService = new JavaStompClientService(httpClientService);
         torClientService = new WhirlpoolTorClientService();
         whirlpoolWalletService = new WhirlpoolWalletService();

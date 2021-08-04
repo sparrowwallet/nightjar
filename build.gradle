@@ -1,13 +1,19 @@
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
 group 'com.sparrowwallet.nightjar'
-version '0.1'
+version '0.1.6'
 
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
+}
+
+def secrets = new Properties()
+file("publish.properties").withInputStream {
+    stream -> secrets.load(stream)
 }
 
 dependencies {
@@ -30,10 +36,28 @@ dependencies {
     implementation ('io.reactivex.rxjava2:rxjava:2.2.15')
     implementation ('org.slf4j:slf4j-api:1.7.30')
     implementation ('com.auth0:java-jwt:3.8.1')
-    implementation ('com.github.zeroleak:throwing-supplier:1.0.3')
     implementation ('ch.qos.logback:logback-classic:1.2.3') {
         exclude group: 'org.hamcrest', module: 'hamcrest-core'
         exclude group: 'org.slf4j'
     }
     implementation ('org.hibernate:hibernate-validator:6.0.17.Final')
+}
+
+publishing {
+    repositories {
+        maven {
+            credentials {
+                username secrets.username
+                password secrets.password
+            }
+            url 'https://mymavenrepo.com/repo/Ym4HjVje06VlvgK5VxFd/'
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            artifactId = 'nightjar'
+            from components.java
+        }
+    }
 }
