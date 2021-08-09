@@ -70,7 +70,7 @@ public class Tx0Preview {
     this.pool = pool;
   }
 
-  protected Tx0Data getTx0Data() {
+  public Tx0Data getTx0Data() {
     return tx0Data;
   }
 

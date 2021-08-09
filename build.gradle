@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.sparrowwallet.nightjar'
-version '0.1.6'
+version '0.1.8'
 
 repositories {
     mavenCentral()
@@ -43,6 +43,11 @@ dependencies {
     implementation ('org.hibernate:hibernate-validator:6.0.17.Final')
 }
 
+task sourceJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
 publishing {
     repositories {
         maven {
@@ -58,6 +63,7 @@ publishing {
         maven(MavenPublication) {
             artifactId = 'nightjar'
             from components.java
+            artifact tasks.sourceJar
         }
     }
 }

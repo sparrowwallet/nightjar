@@ -9,6 +9,7 @@ import com.samourai.wallet.bip47.rpc.secretPoint.ISecretPointFactory;
 import com.samourai.whirlpool.client.tx0.ITx0ParamServiceConfig;
 import com.samourai.whirlpool.client.utils.ClientUtils;
 import com.samourai.whirlpool.client.wallet.beans.Tx0FeeTarget;
+import com.samourai.whirlpool.client.wallet.beans.WhirlpoolServer;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
 import com.samourai.whirlpool.client.whirlpool.WhirlpoolClientConfig;
 import com.samourai.whirlpool.protocol.WhirlpoolProtocol;
@@ -48,6 +49,17 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
   private boolean resyncOnFirstRun;
 
   private ISecretPointFactory secretPointFactory;
+
+    public WhirlpoolWalletConfig(
+            IHttpClientService httpClientService,
+            IStompClientService stompClientService,
+            TorClientService torClientService,
+            ServerApi serverApi,
+            WhirlpoolServer whirlpoolServer,
+            boolean mobile,
+            BackendApi backendApi) {
+        this(httpClientService, stompClientService, torClientService, serverApi, whirlpoolServer.getParams(), mobile, backendApi);
+    }
 
   public WhirlpoolWalletConfig(
       IHttpClientService httpClientService,

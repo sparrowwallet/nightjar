@@ -2,11 +2,11 @@ package com.samourai.wallet.hd;
 
 import com.google.common.base.Joiner;
 import com.samourai.wallet.util.FormatsUtilGeneric;
+import com.samourai.whirlpool.client.wallet.beans.WhirlpoolServer;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.crypto.*;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -32,6 +32,10 @@ public class HD_Wallet {
      */
     public HD_Wallet(int purpose, MnemonicCode mc, NetworkParameters mParams, byte[] mSeed, String strPassphrase, int nbAccounts) throws MnemonicException.MnemonicLengthException {
         this(purpose, mc.toMnemonic(mSeed), mParams, mSeed, strPassphrase, nbAccounts);
+    }
+
+    public HD_Wallet(int purpose, List<String> wordList, WhirlpoolServer whirlpoolServer, byte[] mSeed, String strPassphrase, int nbAccounts) {
+        this(purpose, wordList, whirlpoolServer.getParams(), mSeed, strPassphrase, nbAccounts);
     }
 
     protected HD_Wallet(int purpose, List<String> wordList, NetworkParameters mParams, byte[] mSeed, String strPassphrase, int nbAccounts) {
