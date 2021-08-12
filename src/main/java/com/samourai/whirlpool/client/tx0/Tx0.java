@@ -24,6 +24,10 @@ public class Tx0 extends Tx0Preview {
     return tx;
   }
 
+  public String getTxid() {
+      return tx.getHashAsString();
+  }
+
   public List<TransactionOutput> getPremixOutputs() {
     return premixOutputs;
   }

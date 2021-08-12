@@ -2,8 +2,8 @@ package com.sparrowwallet.nightjar.stomp;
 
 import com.samourai.stomp.client.IStompClient;
 import com.samourai.stomp.client.IStompMessage;
+import com.samourai.wallet.util.MessageErrorListener;
 import com.samourai.whirlpool.client.utils.ClientUtils;
-import com.samourai.whirlpool.client.utils.MessageErrorListener;
 import com.sparrowwallet.nightjar.http.JavaHttpClient;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.websocket.client.WebSocketClient;

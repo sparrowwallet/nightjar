@@ -1,6 +1,8 @@
 package com.samourai.wallet.hd;
 
 import com.google.common.base.Joiner;
+import com.samourai.wallet.api.backend.beans.UnspentOutput;
+import com.samourai.wallet.segwit.SegwitAddress;
 import com.samourai.wallet.util.FormatsUtilGeneric;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolServer;
 import org.bitcoinj.core.AddressFormatException;
@@ -14,7 +16,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class HD_Wallet {
-
     private byte[] mSeed = null;
     private String strPassphrase = null;
     private List<String> mWordList = null;
@@ -54,6 +55,9 @@ public class HD_Wallet {
 
     protected HD_Wallet(int purpose, HD_Wallet inputWallet, int nbAccounts) {
         this(purpose, inputWallet.mWordList, inputWallet.mParams, inputWallet.mSeed, inputWallet.strPassphrase, nbAccounts);
+    }
+    public HD_Wallet(int purpose, HD_Wallet inputWallet) {
+        this(purpose, inputWallet, 1);
     }
 
     /*
@@ -101,6 +105,10 @@ public class HD_Wallet {
         return mAccounts;
     }
 
+    public NetworkParameters getParams() {
+        return mParams;
+    }
+
     public HD_Account getAccount(int accountId) {
         return mAccounts.get(accountId);
     }
@@ -141,5 +149,19 @@ public class HD_Wallet {
 
         return buf;
 
+    }
+
+    public HD_Address getAddressAt(int account, int chain, int idx) {
+        return getAccountAt(account).getChain(chain).getAddressAt(idx);
+    }
+
+    public SegwitAddress getSegwitAddressAt(int account, int chain, int idx) {
+        HD_Address addr = getAddressAt(account, chain, idx);
+        SegwitAddress segwitAddress = new SegwitAddress(addr.getPubKey(), mParams);
+        return segwitAddress;
+    }
+
+    public HD_Address getAddressAt(int account, UnspentOutput utxo) {
+        return getAddressAt(account, utxo.computePathChainIndex(), utxo.computePathAddressIndex());
     }
 }

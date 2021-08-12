@@ -8,6 +8,7 @@ import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.Utils;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
+import org.bouncycastle.util.encoders.Hex;
 
 public class SegwitAddress {
 
@@ -130,6 +131,10 @@ public class SegwitAddress {
         System.arraycopy(hash, 0, buf, 2, hash.length); // keyhash
 
         return new Script(buf);
+    }
+
+    public String segWitRedeemScriptToString() {
+        return Hex.toHexString(segWitRedeemScript().getProgram());
     }
 
 }

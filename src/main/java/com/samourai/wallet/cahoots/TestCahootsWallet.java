@@ -1,7 +1,7 @@
 package com.samourai.wallet.cahoots;
 
 import com.google.common.base.Strings;
-import com.samourai.wallet.segwit.BIP84Wallet;
+import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.segwit.bech32.Bech32UtilGeneric;
 import com.samourai.wallet.send.MyTransactionOutPoint;
 import org.bitcoinj.core.ECKey;
@@ -15,8 +15,8 @@ public class TestCahootsWallet extends SimpleCahootsWallet {
     public static final int POST_CHANGE_INDEX = 123;
     public static final int FEE_PER_B = 1;
 
-    public TestCahootsWallet(BIP84Wallet bip84Wallet, NetworkParameters params) throws Exception {
-        super(bip84Wallet, params, POST_CHANGE_INDEX, FEE_PER_B);
+    public TestCahootsWallet(HD_Wallet bip84w, NetworkParameters params) throws Exception {
+        super(bip84w, params, POST_CHANGE_INDEX, FEE_PER_B);
     }
 
     public void addUtxo(int account, String txid, int n, long value, String address) {
@@ -26,7 +26,6 @@ public class TestCahootsWallet extends SimpleCahootsWallet {
         byte[] scriptBytes = mockScriptBytes();
         MyTransactionOutPoint outpoint = new MyTransactionOutPoint(getParams(), Sha256Hash.of(txid.getBytes()), n, BigInteger.valueOf(value), scriptBytes, address);
         CahootsUtxo utxo = new CahootsUtxo(outpoint, path, key);
-        outpoint.setConfirmations(999);
         addUtxo(account, utxo);
     }
 

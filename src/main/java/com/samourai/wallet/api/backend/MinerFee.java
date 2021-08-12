@@ -13,4 +13,16 @@ public class MinerFee {
     int fee = feesResponse.get(feeTarget.getValue());
     return fee;
   }
+
+  public Map<String, Integer> _getMap() {
+    return feesResponse;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    MinerFee minerFee = (MinerFee) o;
+    return feesResponse.equals(minerFee.feesResponse);
+  }
 }

@@ -23,20 +23,6 @@ public class TxUtil {
     return instance;
   }
 
-  public void signInputSegwit(Transaction tx, int inputIdx, ECKey ecKey, long spendAmount, NetworkParameters params) {
-    final SegwitAddress segwitAddress = new SegwitAddress(ecKey, params);
-    final Script redeemScript = segwitAddress.segWitRedeemScript();
-    final Script scriptCode = redeemScript.scriptCode();
-
-    TransactionSignature sig =
-        tx.calculateWitnessSignature(
-            inputIdx, ecKey, scriptCode, Coin.valueOf(spendAmount), Transaction.SigHash.ALL, false);
-    final TransactionWitness witness = new TransactionWitness(2);
-    witness.setPush(0, sig.encodeToBitcoin());
-    witness.setPush(1, ecKey.getPubKey());
-    tx.setWitness(inputIdx, witness);
-  }
-
   public void verifySignInput(Transaction tx, int inputIdx, long inputValue, byte[] connectedScriptBytes) throws Exception {
     Script connectedScript = new Script(connectedScriptBytes);
     tx.getInput(inputIdx).getScriptSig().correctlySpends(tx, inputIdx, connectedScript, Coin.valueOf(inputValue), Script.ALL_VERIFY_FLAGS);

@@ -1,5 +1,7 @@
 package com.samourai.wallet.hd;
 
+import com.samourai.wallet.segwit.SegwitAddress;
+import com.samourai.wallet.segwit.bech32.Bech32UtilGeneric;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
@@ -13,22 +15,22 @@ import org.json.JSONObject;
 
 public class HD_Address {
 
-    private int mChildNum;
+    private int accountIndex;
+    private int chainIndex;
+    private int mChildNum; // addressIndex
     private String strPath = null;
     private ECKey ecKey = null;
     private byte[] mPubKey = null;
-    private byte[] mPubKeyHash = null;
-
-    private HD_Account hdAccount = null;
-    private HD_Chain hdChain = null;
 
     private NetworkParameters mParams = null;
 
     private HD_Address() { ; }
 
-    public HD_Address(NetworkParameters params, DeterministicKey cKey, int child) {
+    public HD_Address(NetworkParameters params, DeterministicKey cKey, int accountIndex, int chainIndex, int child) {
 
         mParams = params;
+        this.accountIndex = accountIndex;
+        this.chainIndex = chainIndex;
         mChildNum = child;
 
         DeterministicKey dk = HDKeyDerivation.deriveChildKey(cKey, new ChildNumber(mChildNum, false));
@@ -42,13 +44,24 @@ public class HD_Address {
         ecKey.setCreationTimeSeconds(now);
 
         mPubKey = ecKey.getPubKey();
-        mPubKeyHash = ecKey.getPubKeyHash();
 
         strPath = dk.getPath().toString();
     }
 
     public String getAddressString() {
         return ecKey.toAddress(mParams).toString();
+    }
+
+    public String getAddressString(AddressType addressType) {
+        switch (addressType) {
+            case LEGACY:
+                return getAddressString();
+            case SEGWIT_COMPAT:
+                return new SegwitAddress(getPubKey(), mParams).getAddressAsString();
+            case SEGWIT_NATIVE:
+                return Bech32UtilGeneric.getInstance().toBech32(getPubKey(), mParams);
+        }
+        return null;
     }
 
     public String getPrivateKeyString() {
@@ -60,6 +73,18 @@ public class HD_Address {
             return null;
         }
 
+    }
+
+    public int getAccountIndex() {
+        return accountIndex;
+    }
+
+    public int getChainIndex() {
+        return chainIndex;
+    }
+
+    public int getAddressIndex() {
+        return mChildNum;
     }
 
     public byte[] getPubKey() {
@@ -74,10 +99,6 @@ public class HD_Address {
         return ecKey;
     }
 
-    public HD_Account getAccount() {
-        return hdAccount;
-    }
-
     public JSONObject toJSON() {
         try {
             JSONObject obj = new JSONObject();
@@ -90,5 +111,13 @@ public class HD_Address {
         catch(JSONException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    public String getPathFull(AddressType addressType) {
+        return getPathFull(addressType.getPurpose(), 0, accountIndex, chainIndex, mChildNum);
+    }
+
+    public static String getPathFull(int purpose, int coinType, int account, int chain, int address) {
+        return "m/"+purpose+"'/"+coinType+"'/"+account+"'/"+chain+"/"+address;
     }
 }

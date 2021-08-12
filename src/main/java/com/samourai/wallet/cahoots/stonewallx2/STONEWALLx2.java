@@ -10,6 +10,7 @@ import com.samourai.wallet.segwit.SegwitAddress;
 import com.samourai.wallet.segwit.bech32.Bech32Segwit;
 import com.samourai.wallet.send.MyTransactionOutPoint;
 import com.samourai.wallet.util.FormatsUtilGeneric;
+import com.samourai.wallet.util.RandomUtil;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.bitcoinj.core.*;
@@ -43,7 +44,8 @@ public class STONEWALLx2 extends Cahoots {
 
     public STONEWALLx2(long spendAmount, String address, NetworkParameters params, int account)    {
         this.ts = System.currentTimeMillis() / 1000L;
-        this.strID = Hex.toHexString(Sha256Hash.hash(BigInteger.valueOf(new SecureRandom().nextLong()).toByteArray()));
+        SecureRandom random = RandomUtil.getSecureRandom();
+        this.strID = Hex.toHexString(Sha256Hash.hash(BigInteger.valueOf(random.nextLong()).toByteArray()));
         this.type = CahootsType.STONEWALLX2.getValue();
         this.step = 0;
         this.spendAmount = spendAmount;
@@ -67,9 +69,9 @@ public class STONEWALLx2 extends Cahoots {
 
         Transaction transaction = new Transaction(params);
         for(MyTransactionOutPoint outpoint : inputs.keySet())   {
-            TransactionInput input = new TransactionInput(params, null, new byte[0], outpoint, outpoint.getValue());
+            TransactionInput input = outpoint.computeSpendInput();
             transaction.addInput(input);
-            outpoints.put(outpoint.getTxHash().toString() + "-" + outpoint.getTxOutputN(), outpoint.getValue().longValue());
+            outpoints.put(outpoint.getHash().toString() + "-" + outpoint.getIndex(), outpoint.getValue().longValue());
         }
         for(_TransactionOutput output : outputs.keySet())   {
             transaction.addOutput(output);
@@ -116,9 +118,9 @@ public class STONEWALLx2 extends Cahoots {
             if (log.isDebugEnabled()) {
                 log.debug("outpoint value:" + outpoint.getValue().longValue());
             }
-            TransactionInput input = new TransactionInput(params, null, new byte[0], outpoint, outpoint.getValue());
+            TransactionInput input = outpoint.computeSpendInput();
             transaction.addInput(input);
-            outpoints.put(outpoint.getTxHash().toString() + "-" + outpoint.getTxOutputN(), outpoint.getValue().longValue());
+            outpoints.put(outpoint.getHash().toString() + "-" + outpoint.getIndex(), outpoint.getValue().longValue());
         }
         for(_TransactionOutput output : outputs.keySet())   {
             transaction.addOutput(output);

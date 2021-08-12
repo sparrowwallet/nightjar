@@ -4,7 +4,6 @@ import com.samourai.wallet.bip47.rpc.PaymentCode;
 import com.samourai.wallet.cahoots.psbt.PSBT;
 import com.samourai.wallet.segwit.bech32.Bech32;
 import com.samourai.wallet.segwit.bech32.Bech32Segwit;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.DeterministicKey;
@@ -12,8 +11,9 @@ import org.bitcoinj.crypto.HDKeyDerivation;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.uri.BitcoinURI;
 import org.bitcoinj.uri.BitcoinURIParseException;
-import org.bouncycastle.util.encoders.Hex;
+import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
@@ -42,7 +42,7 @@ public class FormatsUtilGeneric {
 	public static final int MAGIC_VPRV = 0x045F18BC;
 
 	public static final String XPUB = "^[xtyu]pub[1-9A-Za-z][^OIl]+$";
-    public static final String HEX = "^[0-9A-Fa-f]+$";
+	public static final String HEX = "^[0-9A-Fa-f]+$";
 
 	private static FormatsUtilGeneric instance = null;
 
@@ -161,7 +161,7 @@ public class FormatsUtilGeneric {
 					String amt = null;
 					int idx = matcher.group(3).indexOf("=");
 					if(idx != -1 && idx < matcher.group(3).length())    {
-							amt = matcher.group(3).substring(idx + 1);
+						amt = matcher.group(3).substring(idx + 1);
 					}
 
 					if(amt != null)	{
@@ -260,6 +260,15 @@ public class FormatsUtilGeneric {
 	}
 
 	public boolean isValidXpub(String xpub){
+		return isValidXpub(xpub, MAGIC_XPUB, MAGIC_TPUB, MAGIC_YPUB, MAGIC_UPUB, MAGIC_ZPUB, MAGIC_VPUB);
+	}
+
+	public boolean isValidXpubOrZpub(String xpub, NetworkParameters params){
+		int[] magic = isTestNet(params) ? new int[]{MAGIC_VPUB,MAGIC_TPUB} : new int[]{MAGIC_ZPUB,MAGIC_XPUB};
+		return isValidXpub(xpub, magic);
+	}
+
+	private boolean isValidXpub(String xpub, int... versions){
 
 		try {
 			byte[] xpubBytes = Base58.decodeChecked(xpub);
@@ -270,7 +279,7 @@ public class FormatsUtilGeneric {
 
 			ByteBuffer byteBuffer = ByteBuffer.wrap(xpubBytes);
 			int version = byteBuffer.getInt();
-			if(version != MAGIC_XPUB && version != MAGIC_TPUB && version != MAGIC_YPUB && version != MAGIC_UPUB && version != MAGIC_ZPUB && version != MAGIC_VPUB)   {
+			if (!Arrays.contains(versions, version)) {
 				throw new AddressFormatException("invalid version: " + xpub);
 			}
 			else	{
@@ -325,6 +334,55 @@ public class FormatsUtilGeneric {
 		}
 	}
 
+	public String xlatXpub(String xpub, boolean isBIP84) throws AddressFormatException {
+
+		byte[] xpubBytes = Base58.decodeChecked(xpub);
+
+		ByteBuffer bb = ByteBuffer.wrap(xpubBytes);
+		int ver = bb.getInt();
+		if(ver != MAGIC_XPUB && ver != MAGIC_TPUB && ver != MAGIC_YPUB && ver != MAGIC_UPUB && ver != MAGIC_ZPUB && ver != MAGIC_VPUB)   {
+			throw new AddressFormatException("invalid xpub version");
+		}
+
+		int xlatVer = 0;
+		switch(ver)    {
+			case MAGIC_XPUB:
+				xlatVer = isBIP84 ? MAGIC_ZPUB : MAGIC_YPUB;
+				break;
+			case MAGIC_YPUB:
+				xlatVer = MAGIC_XPUB;
+				break;
+			case MAGIC_TPUB:
+				xlatVer = isBIP84 ? MAGIC_VPUB : MAGIC_UPUB;
+				break;
+			case MAGIC_UPUB:
+				xlatVer = MAGIC_TPUB;
+				break;
+			case MAGIC_ZPUB:
+				xlatVer = MAGIC_XPUB;
+				break;
+			case MAGIC_VPUB:
+				xlatVer = MAGIC_TPUB;
+				break;
+		}
+
+		ByteBuffer b = ByteBuffer.allocate(4);
+		b.putInt(xlatVer);
+		byte[] bVer = b.array();
+
+		System.arraycopy(bVer, 0, xpubBytes, 0, bVer.length);
+
+		// append checksum
+		byte[] checksum = java.util.Arrays.copyOfRange(Sha256Hash.hashTwice(xpubBytes), 0, 4);
+		byte[] xlatXpub = new byte[xpubBytes.length + checksum.length];
+		System.arraycopy(xpubBytes, 0, xlatXpub, 0, xpubBytes.length);
+		System.arraycopy(checksum, 0, xlatXpub, xlatXpub.length - 4, checksum.length);
+
+		String ret = Base58.encode(xlatXpub);
+
+		return ret;
+	}
+
 	public boolean isValidPaymentCode(String pcode){
 
 		try {
@@ -352,7 +410,7 @@ public class FormatsUtilGeneric {
 	public DeterministicKey createMasterPubKeyFromXPub(String xpubstr) throws AddressFormatException {
 
 		if(!isValidXpub(xpubstr))	{
-				return null;
+			return null;
 		}
 
 		byte[] xpubBytes = Base58.decodeChecked(xpubstr);
@@ -379,7 +437,7 @@ public class FormatsUtilGeneric {
 	public byte[] getFingerprintFromXPUB(String xpubstr) throws AddressFormatException {
 
 		if(!isValidXpub(xpubstr))	{
-				return null;
+			return null;
 		}
 
 		byte[] xpubBytes = Base58.decodeChecked(xpubstr);
@@ -392,40 +450,40 @@ public class FormatsUtilGeneric {
 
 	public boolean isHex(String s)   {
 
-			if(s.matches(HEX_REGEX))    {
-					return true;
-			}
-			else    {
-					return false;
-			}
+		if(s.matches(HEX_REGEX))    {
+			return true;
+		}
+		else    {
+			return false;
+		}
 
 	}
 
 	public boolean isBase64(String s)   {
 
-			if(s.matches(BASE64_REGEX))    {
-					return true;
-			}
-			else    {
-					return false;
-			}
+		if(s.matches(BASE64_REGEX))    {
+			return true;
+		}
+		else    {
+			return false;
+		}
 
 	}
 
 	public boolean isPSBT(String s)   {
 
-			if(isHex(s) && s.startsWith(PSBT.PSBT_MAGIC))    {
-					return true;
-			}
-			else if(isBase64(s) && Hex.toHexString(Base64.decode(s)).startsWith(PSBT.PSBT_MAGIC))    {
-					return true;
-			}
-			else if(Z85.getInstance().isZ85(s) && Hex.toHexString(Z85.getInstance().decode(s)).startsWith(PSBT.PSBT_MAGIC))    {
-					return true;
-			}
-			else    {
-					return false;
-			}
+		if(isHex(s) && s.startsWith(PSBT.PSBT_MAGIC))    {
+			return true;
+		}
+		else if(isBase64(s) && Hex.toHexString(Base64.decode(s)).startsWith(PSBT.PSBT_MAGIC))    {
+			return true;
+		}
+		else if(Z85.getInstance().isZ85(s) && Hex.toHexString(Z85.getInstance().decode(s)).startsWith(PSBT.PSBT_MAGIC))    {
+			return true;
+		}
+		else    {
+			return false;
+		}
 
 	}
 

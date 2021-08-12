@@ -8,9 +8,8 @@ import com.sparrowwallet.nightjar.http.JavaHttpClientService;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public class JavaStompClientService implements IStompClientService {
-    private JavaHttpClientService httpClientService;
-
-    private ThreadPoolTaskScheduler taskScheduler;
+    private final JavaHttpClientService httpClientService;
+    private final ThreadPoolTaskScheduler taskScheduler;
 
     public JavaStompClientService(JavaHttpClientService httpClientService) {
         this.httpClientService = httpClientService;
@@ -18,6 +17,7 @@ public class JavaStompClientService implements IStompClientService {
         taskScheduler = new ThreadPoolTaskScheduler();
         taskScheduler.setPoolSize(1);
         taskScheduler.setThreadNamePrefix("stomp-heartbeat");
+        taskScheduler.setDaemon(true);
         taskScheduler.initialize();
     }
 

@@ -68,13 +68,15 @@ public class JavaHttpClient extends JacksonHttpClient {
     }
 
     @Override
-    protected String requestJsonGet(String urlStr, Map<String, String> headers) throws Exception {
+    protected String requestJsonGet(String urlStr, Map<String, String> headers, boolean async) throws Exception {
+        log.info("GET " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.GET, headers);
         return requestJson(req);
     }
 
     @Override
     protected String requestJsonPost(String urlStr, Map<String, String> headers, String jsonBody) throws Exception {
+        log.info("POST " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.POST, headers);
         req.content(new StringContentProvider(MediaType.APPLICATION_JSON_VALUE, jsonBody, StandardCharsets.UTF_8));
         return requestJson(req);
@@ -82,6 +84,7 @@ public class JavaHttpClient extends JacksonHttpClient {
 
     @Override
     protected String requestJsonPostUrlEncoded(String urlStr, Map<String, String> headers, Map<String, String> body) throws Exception {
+        log.info("POST " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.POST, headers);
         req.content(new FormContentProvider(computeBodyFields(body)));
         return requestJson(req);

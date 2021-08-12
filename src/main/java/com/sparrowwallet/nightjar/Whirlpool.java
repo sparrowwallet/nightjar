@@ -5,8 +5,10 @@ import com.samourai.http.client.HttpUsage;
 import com.samourai.tor.client.TorClientService;
 import com.samourai.wallet.api.backend.BackendApi;
 import com.samourai.wallet.api.backend.BackendServer;
+import com.samourai.wallet.api.backend.websocket.BackendWsApi;
 import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.hd.java.HD_WalletFactoryJava;
+import com.samourai.websocket.client.IWebsocketClient;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletConfig;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletService;
@@ -16,6 +18,7 @@ import com.sparrowwallet.nightjar.http.JavaHttpClient;
 import com.sparrowwallet.nightjar.http.JavaHttpClientService;
 import com.sparrowwallet.nightjar.stomp.JavaStompClientService;
 import com.sparrowwallet.nightjar.tor.WhirlpoolTorClientService;
+import com.sparrowwallet.nightjar.websocket.JettyWebsocketClient;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.crypto.MnemonicException;
@@ -46,6 +49,7 @@ public class Whirlpool {
         stompClientService = new JavaStompClientService(httpClientService);
         torClientService = new WhirlpoolTorClientService();
         whirlpoolWalletService = new WhirlpoolWalletService();
+        IWebsocketClient wsClient = new JettyWebsocketClient(httpClientService);
         config = computeWhirlpoolWalletConfig(sCode, maxClients, clientDelay);
     }
 
@@ -57,11 +61,12 @@ public class Whirlpool {
         ServerApi serverApi = new ServerApi(serverUrl, httpClientService);
         JavaHttpClient httpClientBackend = httpClientService.getHttpClient(HttpUsage.BACKEND);
         BackendApi backendApi = new BackendApi(httpClientBackend, backendUrl, null);
+        BackendWsApi backendWsApi = new BackendWsApi(new JettyWebsocketClient(httpClientService), backendUrl, null);
 
         NetworkParameters params = whirlpoolServer.getParams();
         boolean isAndroid = false;
 
-        WhirlpoolWalletConfig whirlpoolWalletConfig = new WhirlpoolWalletConfig(httpClientService, stompClientService, torClientService, serverApi, params, isAndroid, backendApi);
+        WhirlpoolWalletConfig whirlpoolWalletConfig = new WhirlpoolWalletConfig(httpClientService, stompClientService, torClientService, serverApi, params, isAndroid, backendApi, backendWsApi);
 
         whirlpoolWalletConfig.setAutoTx0PoolId(null); // disable auto-tx0
         whirlpoolWalletConfig.setAutoMix(false); // disable auto-mix
@@ -84,7 +89,7 @@ public class Whirlpool {
             String walletIdentifier = whirlpoolServer.toString().toLowerCase() + "-" + walletId;
             String walletStateFileName = computeIndexFile(walletIdentifier).getAbsolutePath();
             String utxoConfigFileName = computeUtxosFile(walletIdentifier).getAbsolutePath();
-            return whirlpoolWalletService.openWallet(config, hdWallet, walletStateFileName, utxoConfigFileName);
+            return whirlpoolWalletService.openWallet(config, hdWallet, walletIdentifier);
         } catch(MnemonicException e) {
             throw new WhirlpoolException("Invalid mnemonic " + e.getMessage());
         } catch(Exception e) {

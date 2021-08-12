@@ -84,10 +84,6 @@ public abstract class AbstractOrchestrator {
 
   protected abstract void runOrchestrator();
 
-  public void quickStop() {
-    this.started = false;
-  }
-
   public synchronized void stop() {
     if (!isStarted()) {
       log.error("Cannot stop: not started");

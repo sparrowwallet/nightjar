@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.sparrowwallet.nightjar'
-version '0.1.8'
+version '0.2.6'
 
 repositories {
     mavenCentral()
@@ -36,6 +36,7 @@ dependencies {
     implementation ('io.reactivex.rxjava2:rxjava:2.2.15')
     implementation ('org.slf4j:slf4j-api:1.7.30')
     implementation ('com.auth0:java-jwt:3.8.1')
+    implementation('org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.20')
     implementation ('ch.qos.logback:logback-classic:1.2.3') {
         exclude group: 'org.hamcrest', module: 'hamcrest-core'
         exclude group: 'org.slf4j'

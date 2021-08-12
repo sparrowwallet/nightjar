@@ -33,7 +33,7 @@ public abstract class AbstractCahootsService<T extends Cahoots> {
         HashMap<String, CahootsUtxo> utxosByHash = new HashMap<String, CahootsUtxo>();
         for (CahootsUtxo utxo : utxos) {
             MyTransactionOutPoint outpoint = utxo.getOutpoint();
-            utxosByHash.put(outpoint.getTxHash().toString() + "-" + outpoint.getTxOutputN(), utxo);
+            utxosByHash.put(outpoint.getHash().toString() + "-" + outpoint.getIndex(), utxo);
         }
 
         Transaction transaction = cahoots.getTransaction();
@@ -111,7 +111,7 @@ public abstract class AbstractCahootsService<T extends Cahoots> {
     private List<String> computeMyOutputAddresses(CahootsWallet cahootsWallet, int account, int chain, int idx) throws Exception {
         List<String> addresses = new LinkedList<String>();
         for (int i=0; i<2; i++) {
-            SegwitAddress segwitAddress = cahootsWallet.getBip84Wallet().getAddressAt(account, chain, idx+i);
+            SegwitAddress segwitAddress = cahootsWallet.getBip84Wallet().getSegwitAddressAt(account, chain, idx+i);
             addresses.add(segwitAddress.getBech32AsString());
             if (log.isDebugEnabled()) {
                 log.debug("myOutputAddress " + account + ":m/" + chain + "/" + (idx + i) + " = " + segwitAddress.getBech32AsString());

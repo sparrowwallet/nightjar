@@ -5,19 +5,12 @@ import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.hd.java.HD_WalletFactoryJava;
 import com.samourai.wallet.segwit.SegwitAddress;
 import com.samourai.wallet.segwit.bech32.Bech32UtilGeneric;
-import java.security.SecureRandom;
-import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.Transaction;
-import org.bitcoinj.core.TransactionInput;
-import org.bitcoinj.core.TransactionOutPoint;
-import org.bitcoinj.core.TransactionOutput;
+import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.wallet.KeyChain;
 import org.bitcoinj.wallet.KeyChainGroup;
 
 public class CryptoTestUtil {
-    private static final SecureRandom random = new SecureRandom();
     private static final HD_WalletFactoryJava hdWalletFactory = HD_WalletFactoryJava.getInstance();
     private CryptoTestUtil() {}
 
@@ -34,9 +27,7 @@ public class CryptoTestUtil {
         // len == 16 (12 words), len == 24 (18 words), len == 32 (24 words)
         int len = (nbWords / 3) * 4;
 
-        byte seed[] = new byte[len];
-        random.nextBytes(seed);
-
+        byte seed[] = RandomUtil.getInstance().nextBytes(len);
         return seed;
     }
 

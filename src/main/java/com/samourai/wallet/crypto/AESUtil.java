@@ -1,13 +1,9 @@
 package com.samourai.wallet.crypto;
 
 import com.samourai.wallet.util.CharSequenceX;
-
+import com.samourai.wallet.util.RandomUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.bouncycastle.crypto.BlockCipher;
-import org.bouncycastle.crypto.BufferedBlockCipher;
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.PBEParametersGenerator;
+import org.bouncycastle.crypto.*;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
@@ -18,16 +14,24 @@ import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 
-import java.io.UnsupportedEncodingException;
-import java.security.SecureRandom;
-
 import javax.annotation.Nullable;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.CharacterCodingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 public class AESUtil {
 
 //    private static Logger mLogger = LoggerFactory.getLogger(AESUtil.class);
 
+    private static final RandomUtil randomUtil = RandomUtil.getInstance();
     public static final int DefaultPBKDF2Iterations = 5000;
+    public static final int DefaultPBKDF2HMACSHA256Iterations = 15000;
 
     public static final int MODE_CBC = 0;
     public static final int MODE_OFB = 1;
@@ -45,10 +49,12 @@ public class AESUtil {
         return decrypt(ciphertext, password, DefaultPBKDF2Iterations);
     }
 
+    @Deprecated
     public static String decrypt(String ciphertext, CharSequenceX password, int iterations) throws UnsupportedEncodingException, InvalidCipherTextException, DecryptionException {
         return decryptWithSetMode(ciphertext, password, iterations, MODE_CBC, new ISO10126d2Padding());
     }
 
+    @Deprecated
     public static String decryptWithSetMode(String ciphertext, CharSequenceX password, int iterations, int mode, @Nullable BlockCipherPadding padding) throws InvalidCipherTextException, UnsupportedEncodingException, DecryptionException {
         final int AESBlockSize = 4;
 
@@ -103,14 +109,17 @@ public class AESUtil {
 
     // AES 256 PBKDF2 CBC iso10126 encryption
 
+    @Deprecated
     public static String encrypt(String cleartext, CharSequenceX password) throws DecryptionException, UnsupportedEncodingException {
         return encrypt(cleartext, password, AESUtil.DefaultPBKDF2Iterations);
     }
 
+    @Deprecated
     public static String encrypt(String cleartext, CharSequenceX password, int iterations) throws DecryptionException, UnsupportedEncodingException {
         return encryptWithSetMode(cleartext, password, iterations, MODE_CBC, new ISO10126d2Padding());
     }
 
+    @Deprecated
     public static String encryptWithSetMode(String cleartext, CharSequenceX password, int iterations, int mode, @Nullable BlockCipherPadding padding) throws DecryptionException, UnsupportedEncodingException {
 
         final int AESBlockSize = 4;
@@ -119,10 +128,8 @@ public class AESUtil {
             throw new DecryptionException("Password null");
         }
 
-        // Use secure random to generate a 16 byte iv
-        SecureRandom random = new SecureRandom();
-        byte iv[] = new byte[AESBlockSize * 4];
-        random.nextBytes(iv);
+        // generate a 16 byte iv
+        byte iv[] = randomUtil.nextBytes(AESBlockSize * 4);
 
         byte[] clearbytes = cleartext.getBytes("UTF-8");
 
@@ -162,7 +169,7 @@ public class AESUtil {
 
 //      String ret = Base64.encodeBase64String(ivAppended);
         byte[] raw = Base64.encodeBase64(ivAppended);
-        return new String(raw);
+        return new String(raw, "UTF-8");
     }
 
     private static byte[] cipherData(BufferedBlockCipher cipher, byte[] data) {

@@ -48,7 +48,7 @@ public class WalletResponse {
   }
 
   public static class Tx {
-    public long block_height;
+    public Integer block_height; // null when unconfirmed
     public String hash;
     public int version;
     public long locktime;
@@ -70,14 +70,14 @@ public class WalletResponse {
     public int vout;
     public long value;
     public UnspentOutput.Xpub xpub;
-    public String addr;
+    public String addr; // may be null
     public String pubkey;
   }
 
   public static class TxOutput {
     public int n;
     public long value;
-    public String addr;
+    public String addr; // may be null
     public String pubkey;
     public UnspentOutput.Xpub xpub;
   }

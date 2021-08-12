@@ -2,6 +2,7 @@ package com.samourai.whirlpool.client.wallet.data;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.zeroleak.throwingsupplier.ExpiringMemoizingSupplierUtil;
 import com.zeroleak.throwingsupplier.Throwing;
 import com.zeroleak.throwingsupplier.ThrowingSupplier;
 import java.util.concurrent.TimeUnit;
@@ -39,10 +40,15 @@ public abstract class ExpirableSupplier<D> extends BasicSupplier<D> implements L
       if (log.isDebugEnabled()) {
         log.debug("expire");
       }
-      //ExpiringMemoizingSupplierUtil.expire(this.supplier);
+      ExpiringMemoizingSupplierUtil.expire(this.supplier);
     } else {
       log.error("Cannot expire non-expirable supplier!");
     }
+  }
+
+  public synchronized void expireAndReload() throws Exception {
+    expire();
+    load();
   }
 
   @Override

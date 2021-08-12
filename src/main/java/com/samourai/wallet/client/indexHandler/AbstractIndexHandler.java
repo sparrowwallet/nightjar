@@ -1,12 +1,13 @@
 package com.samourai.wallet.client.indexHandler;
 
 import com.google.common.primitives.Ints;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class AbstractIndexHandler implements IIndexHandler {
   private Logger log = LoggerFactory.getLogger(AbstractIndexHandler.class);

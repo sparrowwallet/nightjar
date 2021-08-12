@@ -79,7 +79,7 @@ public class BIP47Account extends HD_Account {
      *
      */
     public HD_Address addressAt(int idx) {
-        return new HD_Address(mParams, aKey, idx);
+        return new HD_Address(mParams, aKey, mAID,0, idx);
     }
 
     private String createPaymentCodeFromAccountKey() {

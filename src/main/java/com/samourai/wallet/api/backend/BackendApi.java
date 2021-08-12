@@ -1,7 +1,6 @@
 package com.samourai.wallet.api.backend;
 
 import com.samourai.wallet.api.backend.beans.*;
-import com.samourai.wallet.util.oauth.OAuthApi;
 import com.samourai.wallet.util.oauth.OAuthManager;
 import java8.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -10,18 +9,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class BackendApi implements OAuthApi {
+public class BackendApi {
   private Logger log = LoggerFactory.getLogger(BackendApi.class);
 
   private static final String URL_UNSPENT = "/unspent?active=";
   private static final String URL_MULTIADDR = "/multiaddr?active=";
   private static final String URL_WALLET = "/wallet?active=";
   private static final String URL_TXS = "/txs?active=";
+  private static final String URL_TX = "/tx/";
   private static final String URL_INIT_BIP84 = "/xpub";
   private static final String URL_MINER_FEES = "/fees";
   private static final String URL_PUSHTX = "/pushtx/";
-  private static final String URL_GET_AUTH_LOGIN = "/auth/login";
-  private static final String URL_GET_AUTH_REFRESH = "/auth/refresh";
   private static final String ZPUB_SEPARATOR = "%7C";
 
   private IBackendClient httpClient;
@@ -138,6 +136,15 @@ public class BackendApi implements OAuthApi {
     return httpClient.getJson(url, TxsResponse.class, headers);
   }
 
+  public TxDetail fetchTx(String txid, boolean fees) throws Exception {
+    String url = computeAuthUrl(urlBackend + URL_TX + txid + (fees ? "?fees=1" : ""));
+    if (log.isDebugEnabled()) {
+      log.debug("fetchTx: "+txid);
+    }
+    Map<String,String> headers = computeHeaders();
+    return httpClient.getJson(url, TxDetail.class, headers);
+  }
+
   public WalletResponse fetchWallet(String zpub) throws Exception {
     return fetchWallet(new String[]{zpub});
   }
@@ -149,7 +156,8 @@ public class BackendApi implements OAuthApi {
       log.debug("fetchWallet");
     }
     Map<String,String> headers = computeHeaders();
-    WalletResponse walletResponse = httpClient.getJson(url, WalletResponse.class, headers);
+    // use async to avoid Jetty's buffer exceeded exception on large responses
+    WalletResponse walletResponse = httpClient.getJson(url, WalletResponse.class, headers, true);
     return walletResponse;
   }
 
@@ -218,7 +226,7 @@ public class BackendApi implements OAuthApi {
     Map<String,String> headers = new HashMap<String, String>();
     if (oAuthManager.isPresent()) {
       // add auth token
-      headers.put("Authorization", "Bearer " + oAuthManager.get().getOAuthAccessToken(this));
+      headers.put("Authorization", "Bearer " + oAuthManager.get().getOAuthAccessToken());
     }
     return headers;
   }
@@ -236,39 +244,4 @@ public class BackendApi implements OAuthApi {
     return urlBackend;
   }
 
-  // OAuthAPI
-
-  @Override
-  public RefreshTokenResponse.Authorization oAuthAuthenticate(String apiKey) throws Exception {
-    String url = getUrlBackend() + URL_GET_AUTH_LOGIN;
-    if (log.isDebugEnabled()) {
-      log.debug("tokenAuthenticate");
-    }
-    Map<String, String> postBody = new HashMap<String, String>();
-    postBody.put("apikey", apiKey);
-    RefreshTokenResponse response =
-            getHttpClient().postUrlEncoded(url, RefreshTokenResponse.class, null, postBody);
-
-    if (response.authorizations == null|| StringUtils.isEmpty(response.authorizations.access_token)) {
-      throw new Exception("Authorization refused. Invalid apiKey?");
-    }
-    return response.authorizations;
-  }
-
-  @Override
-  public String oAuthRefresh(String refreshTokenStr) throws Exception {
-    String url = getUrlBackend() + URL_GET_AUTH_REFRESH;
-    if (log.isDebugEnabled()) {
-      log.debug("tokenRefresh");
-    }
-    Map<String, String> postBody = new HashMap<String, String>();
-    postBody.put("rt", refreshTokenStr);
-    RefreshTokenResponse response =
-            getHttpClient().postUrlEncoded(url, RefreshTokenResponse.class, null, postBody);
-
-    if (response.authorizations == null || StringUtils.isEmpty(response.authorizations.access_token)) {
-      throw new Exception("Authorization refused. Invalid apiKey?");
-    }
-    return response.authorizations.access_token;
-  }
 }

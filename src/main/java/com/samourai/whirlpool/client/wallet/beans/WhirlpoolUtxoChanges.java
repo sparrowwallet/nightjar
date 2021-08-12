@@ -1,38 +1,38 @@
 package com.samourai.whirlpool.client.wallet.beans;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 public class WhirlpoolUtxoChanges {
   private boolean isFirstFetch;
-  private List<WhirlpoolUtxo> utxosAdded;
-  private List<WhirlpoolUtxo> utxosUpdated;
-  private List<WhirlpoolUtxo> utxosRemoved;
+  private Collection<WhirlpoolUtxo> utxosAdded;
+  private Collection<WhirlpoolUtxo> utxosConfirmed;
+  private Collection<WhirlpoolUtxo> utxosRemoved;
 
   public WhirlpoolUtxoChanges(boolean isFirstFetch) {
     this.isFirstFetch = isFirstFetch;
     this.utxosAdded = new ArrayList<WhirlpoolUtxo>();
-    this.utxosUpdated = new ArrayList<WhirlpoolUtxo>();
+    this.utxosConfirmed = new ArrayList<WhirlpoolUtxo>();
     this.utxosRemoved = new ArrayList<WhirlpoolUtxo>();
   }
 
   public boolean isEmpty() {
-    return utxosAdded.isEmpty() && utxosUpdated.isEmpty() && utxosRemoved.isEmpty();
+    return utxosAdded.isEmpty() && utxosConfirmed.isEmpty() && utxosRemoved.isEmpty();
   }
 
   public boolean isFirstFetch() {
     return isFirstFetch;
   }
 
-  public List<WhirlpoolUtxo> getUtxosAdded() {
+  public Collection<WhirlpoolUtxo> getUtxosAdded() {
     return utxosAdded;
   }
 
-  public List<WhirlpoolUtxo> getUtxosUpdated() {
-    return utxosUpdated;
+  public Collection<WhirlpoolUtxo> getUtxosConfirmed() {
+    return utxosConfirmed;
   }
 
-  public List<WhirlpoolUtxo> getUtxosRemoved() {
+  public Collection<WhirlpoolUtxo> getUtxosRemoved() {
     return utxosRemoved;
   }
 
@@ -43,8 +43,8 @@ public class WhirlpoolUtxoChanges {
     }
     return utxosAdded.size()
         + " added, "
-        + utxosUpdated.size()
-        + " updated, "
+        + utxosConfirmed.size()
+        + " confirmed, "
         + utxosRemoved.size()
         + " removed";
   }

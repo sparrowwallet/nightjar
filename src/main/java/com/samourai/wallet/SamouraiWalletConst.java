@@ -9,4 +9,8 @@ public class SamouraiWalletConst {
 
     // hard limit for acceptable fees 0.005
     public static final long MAX_ACCEPTABLE_FEES = 500000;
+
+    public static final BigInteger RBF_SEQUENCE_VAL_WITH_NLOCKTIME = BigInteger.valueOf(0xffffffffL - 1L);
+    public static final BigInteger RBF_SEQUENCE_VAL = BigInteger.valueOf(0xffffffffL - 2L);
+    public static final BigInteger NLOCKTIME_SEQUENCE_VAL = BigInteger.valueOf(0xffffffffL - 3L);
 }

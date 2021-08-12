@@ -145,7 +145,7 @@ public class UtxoConfigSupplier extends AbstractPersistableSupplier<UtxoConfigDa
     return ClientUtils.sha256Hash(utxoHash);
   }
 
-  protected synchronized void onUtxoChanges(UtxoData utxoData) {
+  public synchronized void onUtxoChanges(UtxoData utxoData) {
     WhirlpoolUtxoChanges utxoChanges = utxoData.getUtxoChanges();
 
     // create new utxoConfigs
@@ -170,7 +170,7 @@ public class UtxoConfigSupplier extends AbstractPersistableSupplier<UtxoConfigDa
     }
   }
 
-  private int createUtxoConfigPersisted(List<WhirlpoolUtxo> whirlpoolUtxos) {
+  private int createUtxoConfigPersisted(Collection<WhirlpoolUtxo> whirlpoolUtxos) {
     int nbCreated = 0;
     for (WhirlpoolUtxo whirlpoolUtxo : whirlpoolUtxos) {
       UnspentOutput utxo = whirlpoolUtxo.getUtxo();

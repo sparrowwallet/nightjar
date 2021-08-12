@@ -101,9 +101,7 @@ public class CharSequenceX implements CharSequence {
     }
 
     private void rfill() {
-        SecureRandom r = new SecureRandom();
-        byte[] b = new byte[chars.length];
-        r.nextBytes(b);
+        byte[] b = RandomUtil.getInstance().nextBytes(chars.length);
         for(int i = 0; i < chars.length; i++) {
             chars[i] = (char)b[i];
         }

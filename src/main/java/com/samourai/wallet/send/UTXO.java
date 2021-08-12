@@ -1,6 +1,7 @@
 package com.samourai.wallet.send;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -48,6 +49,14 @@ public class UTXO {
         return value;
     }
 
+    public static long sumValue(Collection<UTXO> utxos) {
+        long sum = 0L;
+        for (UTXO utxo : utxos) {
+            sum += utxo.getValue();
+        }
+        return sum;
+    }
+
     // sorts in descending order by amount
     public static class UTXOComparator implements Comparator<UTXO> {
 
@@ -88,6 +97,14 @@ public class UTXO {
 
         }
 
+    }
+
+    public static int countOutpoints(Collection<UTXO> utxos) {
+        int ret = 0;
+        for (UTXO utxo : utxos) {
+            ret += utxo.getOutpoints().size();
+        }
+        return ret;
     }
 
 }

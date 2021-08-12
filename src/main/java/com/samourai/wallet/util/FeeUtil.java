@@ -7,6 +7,7 @@ import org.bitcoinj.core.NetworkParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.util.Vector;
 
 public class FeeUtil {
@@ -67,6 +68,11 @@ public class FeeUtil {
     return txSize;
   }
 
+  public BigInteger estimatedFeeSegwit(int inputsP2PKH, int inputsP2SHP2WPKH, int inputsP2WPKH, int outputs, BigInteger feePerKb)   {
+    int size = estimatedSizeSegwit(inputsP2PKH, inputsP2SHP2WPKH, inputsP2WPKH, outputs, 0);
+    return calculateFee(size, feePerKb);
+  }
+
   public long estimatedFeeSegwit(
       int inputsP2PKH,
       int inputsP2SHP2WPKH,
@@ -95,6 +101,21 @@ public class FeeUtil {
     } else {
       return fee;
     }
+  }
+
+  public BigInteger calculateFee(int txSize, BigInteger feePerKb)   {
+    long feePerB = toFeePerB(feePerKb);
+    long fee = calculateFee(txSize, feePerB);
+    return BigInteger.valueOf(fee);
+  }
+
+  protected long toFeePerB(BigInteger feePerKb) {
+    long feePerB = Math.round(feePerKb.doubleValue() / 1000.0);
+    return feePerB;
+  }
+
+  public BigInteger toFeePerKB(long feePerB) {
+    return BigInteger.valueOf(feePerB * 1000L);
   }
 
   public Triple<Integer,Integer,Integer> getOutpointCount(Vector<MyTransactionOutPoint> outpoints, NetworkParameters params) {

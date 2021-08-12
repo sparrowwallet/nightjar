@@ -1,7 +1,7 @@
 package com.samourai.wallet.cahoots.stonewallx2;
 
 import com.samourai.wallet.cahoots.*;
-import com.samourai.wallet.segwit.BIP84Wallet;
+import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.segwit.SegwitAddress;
 import com.samourai.wallet.segwit.bech32.Bech32UtilGeneric;
 import com.samourai.wallet.send.MyTransactionOutPoint;
@@ -37,7 +37,7 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
         if (StringUtils.isEmpty(address)) {
             throw new Exception("Invalid address");
         }
-        byte[] fingerprint = cahootsWallet.getBip84Wallet().getWallet().getFingerprint();
+        byte[] fingerprint = cahootsWallet.getBip84Wallet().getFingerprint();
         STONEWALLx2 stonewall0 = doSTONEWALLx2_0(amount, address, account, fingerprint);
         if (log.isDebugEnabled()) {
             log.debug("# STONEWALLx2 INITIATOR => step="+stonewall0.getStep());
@@ -104,10 +104,10 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
     // counterparty
     //
     private STONEWALLx2 doSTONEWALLx2_1(STONEWALLx2 stonewall0, CahootsWallet cahootsWallet, int account) throws Exception {
-        BIP84Wallet bip84Wallet = cahootsWallet.getBip84Wallet();
+        HD_Wallet bip84Wallet = cahootsWallet.getBip84Wallet();
 
         stonewall0.setCounterpartyAccount(account);
-        byte[] fingerprint = bip84Wallet.getWallet().getFingerprint();
+        byte[] fingerprint = bip84Wallet.getFingerprint();
         stonewall0.setFingerprintCollab(fingerprint);
 
         List<CahootsUtxo> utxos = cahootsWallet.getUtxosWpkhByAccount(stonewall0.getCounterpartyAccount());
@@ -146,8 +146,8 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
                 }
 
                 MyTransactionOutPoint outpoint = utxo.getOutpoint();
-                if (!seenTxs.contains(outpoint.getTxHash().toString())) {
-                    seenTxs.add(outpoint.getTxHash().toString());
+                if (!seenTxs.contains(outpoint.getHash().toString())) {
+                    seenTxs.add(outpoint.getHash().toString());
 
                     selectedUTXO.add(utxo);
                     totalContributedAmount += utxo.getValue();
@@ -194,13 +194,13 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
         Pair<Integer,Integer> idxAndChain = cahootsWallet.fetchReceiveIndex(stonewall0.getCounterpartyAccount());
         int idx = idxAndChain.getLeft();
         int chain = idxAndChain.getRight();
-        SegwitAddress segwitAddress0 = bip84Wallet.getAddressAt(stonewall0.getCounterpartyAccount(), chain, idx);
+        SegwitAddress segwitAddress0 = bip84Wallet.getSegwitAddressAt(stonewall0.getCounterpartyAccount(), chain, idx);
         if (log.isDebugEnabled()) {
             log.debug("+output "+stonewall0.getCounterpartyAccount()+":M/"+chain+"/"+idx+" (CounterParty mix) = "+segwitAddress0.getBech32AsString());
         }
         if (segwitAddress0.getBech32AsString().equalsIgnoreCase(stonewall0.getDestination())) {
             idx++;
-            segwitAddress0 = bip84Wallet.getAddressAt(stonewall0.getCounterpartyAccount(), chain, idx);
+            segwitAddress0 = bip84Wallet.getSegwitAddressAt(stonewall0.getCounterpartyAccount(), chain, idx);
         }
         byte[] scriptPubKey_A0 = bech32Util.computeScriptPubKey(segwitAddress0.getBech32AsString(), params);
         _TransactionOutput output_A0 = new _TransactionOutput(params, null, Coin.valueOf(stonewall0.getSpendAmount()), scriptPubKey_A0);
@@ -211,9 +211,9 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
         if (stonewall0.getCounterpartyAccount() == WhirlpoolConst.WHIRLPOOL_POSTMIX_ACCOUNT) {
             ++idx;
         } else {
-            idx = bip84Wallet.getWallet().getAccount(stonewall0.getCounterpartyAccount()).getChange().getAddrIdx();
+            idx = bip84Wallet.getAccount(stonewall0.getCounterpartyAccount()).getChange().getAddrIdx();
         }
-        SegwitAddress segwitAddress1 = bip84Wallet.getAddressAt(stonewall0.getCounterpartyAccount(), chain, idx);
+        SegwitAddress segwitAddress1 = bip84Wallet.getSegwitAddressAt(stonewall0.getCounterpartyAccount(), chain, idx);
         if (log.isDebugEnabled()) {
             log.debug("+output " + stonewall0.getAccount() + ":M/" + chain + "/" + idx + " (CounterParty change) = " + segwitAddress1.getBech32AsString());
         }
@@ -285,8 +285,8 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
                         break;
                 }
 
-                if (!_seenTxs.contains(utxo.getOutpoint().getTxHash().toString())) {
-                    _seenTxs.add(utxo.getOutpoint().getTxHash().toString());
+                if (!_seenTxs.contains(utxo.getOutpoint().getHash().toString())) {
+                    _seenTxs.add(utxo.getOutpoint().getHash().toString());
 
                     selectedUTXO.add(utxo);
                     totalSelectedAmount += utxo.getValue();
@@ -374,8 +374,8 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
         //
         //
 
-        BIP84Wallet bip84Wallet = cahootsWallet.getBip84Wallet();
-        String zpub = bip84Wallet.getWallet().getAccountAt(stonewall1.getAccount()).zpubstr();
+        HD_Wallet bip84Wallet = cahootsWallet.getBip84Wallet();
+        String zpub = bip84Wallet.getAccountAt(stonewall1.getAccount()).zpubstr();
         HashMap<MyTransactionOutPoint, Triple<byte[], byte[], String>> inputsB = new HashMap<MyTransactionOutPoint, Triple<byte[], byte[], String>>();
 
         for (CahootsUtxo utxo : selectedUTXO) {
@@ -390,7 +390,7 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
         Pair<Integer,Integer> idxAndChain = cahootsWallet.fetchChangeIndex(stonewall1.getAccount());
         int idx = idxAndChain.getLeft();
         int chain = idxAndChain.getRight();
-        SegwitAddress segwitAddress = bip84Wallet.getAddressAt(stonewall1.getAccount(), chain, idx);
+        SegwitAddress segwitAddress = bip84Wallet.getSegwitAddressAt(stonewall1.getAccount(), chain, idx);
         if (log.isDebugEnabled()) {
             log.debug("+output " + stonewall1.getAccount() + ":M/" + chain + "/" + idx + " (Spender change) = " + segwitAddress.getBech32AsString());
         }

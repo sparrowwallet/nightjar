@@ -10,6 +10,7 @@ import com.samourai.wallet.cahoots.psbt.PSBTEntry;
 import com.samourai.wallet.segwit.SegwitAddress;
 import com.samourai.wallet.send.MyTransactionOutPoint;
 import com.samourai.wallet.util.JavaUtil;
+import com.samourai.wallet.util.RandomUtil;
 import org.apache.commons.lang3.tuple.Triple;
 import org.bitcoinj.core.*;
 import org.bitcoinj.params.TestNet3Params;
@@ -40,7 +41,8 @@ public class Stowaway extends Cahoots {
 
     public Stowaway(long spendAmount, NetworkParameters params, int account)    {
         this.ts = System.currentTimeMillis() / 1000L;
-        this.strID = Hex.toHexString(Sha256Hash.hash(BigInteger.valueOf(new SecureRandom().nextLong()).toByteArray()));
+        SecureRandom random = RandomUtil.getSecureRandom();
+        this.strID = Hex.toHexString(Sha256Hash.hash(BigInteger.valueOf(random.nextLong()).toByteArray()));
         this.type = CahootsType.STOWAWAY.getValue();
         this.step = 0;
         this.spendAmount = spendAmount;
@@ -51,7 +53,8 @@ public class Stowaway extends Cahoots {
 
     public Stowaway(long spendAmount, NetworkParameters params, String strPayNymInit, String strPayNymCollab, int account)    {
         this.ts = System.currentTimeMillis() / 1000L;
-        this.strID = Hex.toHexString(Sha256Hash.hash(BigInteger.valueOf(new SecureRandom().nextLong()).toByteArray()));
+        SecureRandom random = RandomUtil.getSecureRandom();
+        this.strID = Hex.toHexString(Sha256Hash.hash(BigInteger.valueOf(random.nextLong()).toByteArray()));
         this.type = CahootsType.STOWAWAY.getValue();
         this.step = 0;
         this.spendAmount = spendAmount;
@@ -76,12 +79,12 @@ public class Stowaway extends Cahoots {
 
         Transaction transaction = new Transaction(params);
         for(MyTransactionOutPoint outpoint : inputs.keySet())   {
-            TransactionInput input = new TransactionInput(params, null, new byte[0], outpoint, outpoint.getValue());
+            TransactionInput input = outpoint.computeSpendInput();
             if (log.isDebugEnabled()) {
                 log.debug("input value:" + input.getValue().longValue());
             }
             transaction.addInput(input);
-            outpoints.put(outpoint.getTxHash().toString() + "-" + outpoint.getTxOutputN(), outpoint.getValue().longValue());
+            outpoints.put(outpoint.getHash().toString() + "-" + outpoint.getIndex(), outpoint.getValue().longValue());
         }
         for(_TransactionOutput output : outputs.keySet())   {
             transaction.addOutput(output);
@@ -149,9 +152,9 @@ public class Stowaway extends Cahoots {
             if (log.isDebugEnabled()) {
                 log.debug("outpoint value:" + outpoint.getValue().longValue());
             }
-            TransactionInput input = new TransactionInput(params, null, new byte[0], outpoint, outpoint.getValue());
+            TransactionInput input = outpoint.computeSpendInput();
             transaction.addInput(input);
-            outpoints.put(outpoint.getTxHash().toString() + "-" + outpoint.getTxOutputN(), outpoint.getValue().longValue());
+            outpoints.put(outpoint.getHash().toString() + "-" + outpoint.getIndex(), outpoint.getValue().longValue());
         }
         for(_TransactionOutput output : outputs.keySet())   {
             transaction.addOutput(output);

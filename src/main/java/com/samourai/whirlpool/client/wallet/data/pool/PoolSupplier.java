@@ -1,7 +1,10 @@
 package com.samourai.whirlpool.client.wallet.data.pool;
 
 import com.samourai.wallet.api.backend.beans.HttpException;
+import com.samourai.whirlpool.client.event.PoolsChangeEvent;
+import com.samourai.whirlpool.client.tx0.Tx0ParamService;
 import com.samourai.whirlpool.client.utils.ClientUtils;
+import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.samourai.whirlpool.client.wallet.data.ExpirableSupplier;
 import com.samourai.whirlpool.client.wallet.data.LoadableSupplier;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
@@ -16,11 +19,14 @@ import org.slf4j.LoggerFactory;
 public class PoolSupplier extends ExpirableSupplier<PoolData> implements LoadableSupplier {
   private static final Logger log = LoggerFactory.getLogger(PoolSupplier.class);
 
+  private final WhirlpoolEventService eventService = WhirlpoolEventService.getInstance();
   private final ServerApi serverApi;
+  private final Tx0ParamService tx0ParamService;
 
-  public PoolSupplier(int refreshPoolsDelay, ServerApi serverApi) {
+  public PoolSupplier(int refreshPoolsDelay, ServerApi serverApi, Tx0ParamService tx0ParamService) {
     super(refreshPoolsDelay, null, log);
     this.serverApi = serverApi;
+    this.tx0ParamService = tx0ParamService;
   }
 
   @Override
@@ -30,10 +36,18 @@ public class PoolSupplier extends ExpirableSupplier<PoolData> implements Loadabl
     }
     try {
       PoolsResponse poolsResponse = serverApi.fetchPools();
-      return new PoolData(poolsResponse);
+      return new PoolData(poolsResponse, tx0ParamService);
     } catch (HttpException e) {
       throw ClientUtils.wrapRestError(e);
     }
+  }
+
+  @Override
+  protected void setValue(PoolData value) {
+    super.setValue(value);
+
+    // notify
+    eventService.post(new PoolsChangeEvent());
   }
 
   public Collection<Pool> getPools() {

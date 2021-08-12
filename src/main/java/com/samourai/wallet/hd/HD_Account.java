@@ -15,7 +15,7 @@ public class HD_Account {
 
     protected DeterministicKey aKey = null;
     private String strLabel = null;
-    protected int mAID;
+    protected int mAID; // accountIndex
 
     private HD_Chain mReceive = null;
     private HD_Chain mChange = null;
@@ -43,8 +43,8 @@ public class HD_Account {
         strYPUB = aKey.serializePubB58(params, 49);
         strZPUB = aKey.serializePubB58(params, 84);
 
-        mReceive = new HD_Chain(mParams, aKey, true);
-        mChange = new HD_Chain(mParams, aKey, false);
+        mReceive = new HD_Chain(mParams, aKey, mAID,true);
+        mChange = new HD_Chain(mParams, aKey, mAID,false);
 
     }
 
@@ -59,8 +59,8 @@ public class HD_Account {
 
         strXPUB = strYPUB = strZPUB = xpub;
 
-        mReceive = new HD_Chain(mParams, aKey, true);
-        mChange = new HD_Chain(mParams, aKey, false);
+        mReceive = new HD_Chain(mParams, aKey, mAID,true);
+        mChange = new HD_Chain(mParams, aKey, mAID,false);
 
     }
 

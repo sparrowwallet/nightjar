@@ -6,12 +6,12 @@ import com.google.common.io.Files;
 import com.samourai.wallet.api.backend.beans.HttpException;
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.client.indexHandler.IIndexHandler;
+import com.samourai.wallet.hd.AddressType;
 import com.samourai.wallet.segwit.bech32.Bech32UtilGeneric;
 import com.samourai.wallet.util.CallbackWithArg;
 import com.samourai.wallet.util.FeeUtil;
 import com.samourai.wallet.util.FormatsUtilGeneric;
 import com.samourai.whirlpool.client.exception.NotifiableException;
-import com.samourai.whirlpool.client.tx0.UnspentOutputWithKey;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxo;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxoState;
 import com.samourai.whirlpool.protocol.WhirlpoolProtocol;
@@ -28,13 +28,8 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 import java8.util.Optional;
-import java8.util.concurrent.ThreadLocalRandom;
-import java8.util.function.ToLongFunction;
-import java8.util.stream.StreamSupport;
 import org.bitcoinj.core.*;
-import org.bitcoinj.script.Script;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
-import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,21 +157,29 @@ public class ClientUtils {
     return index;
   }
 
-  public static void logUtxos(Collection<UnspentOutput> utxos) {
-    String lineFormat = "| %10s | %8s | %68s | %45s | %14s |\n";
+  public static void logUtxos(
+      Collection<UnspentOutput> utxos, int purpose, int accountIndex, NetworkParameters params) {
+    String lineFormat = "| %10s | %8s | %68s | %45s | %18s |\n";
     StringBuilder sb = new StringBuilder();
-    sb.append(String.format(lineFormat, "BALANCE", "CONFIRMS", "UTXO", "ADDRESS", "PATH"));
-    sb.append(String.format(lineFormat, "(btc)", "", "", "", ""));
+    sb.append(String.format(lineFormat, "BALANCE", "CONFIRMS", "UTXO", "ADDRESS", "TYPE", "PATH"));
+    sb.append(String.format(lineFormat, "(btc)", "", "", "", "", ""));
     for (UnspentOutput o : utxos) {
       String utxo = o.tx_hash + ":" + o.tx_output_n;
       sb.append(
-          String.format(lineFormat, satToBtc(o.value), o.confirmations, utxo, o.addr, o.getPath()));
+          String.format(
+              lineFormat,
+              satToBtc(o.value),
+              o.confirmations,
+              utxo,
+              o.addr,
+              AddressType.findByAddress(o.addr, params),
+              o.getPathFull(purpose, accountIndex)));
     }
     log.info("\n" + sb.toString());
   }
 
-  public static void logWhirlpoolUtxos(Collection<WhirlpoolUtxo> utxos) {
-    String lineFormat = "| %10s | %8s | %68s | %14s | %12s | %14s | %8s | %6s |\n";
+  public static void logWhirlpoolUtxos(Collection<WhirlpoolUtxo> utxos, int latestBlockHeight) {
+    String lineFormat = "| %10s | %8s | %68s | %45s | %13s | %27s | %14s | %8s | %6s |\n";
     StringBuilder sb = new StringBuilder();
     sb.append(
         String.format(
@@ -184,12 +187,14 @@ public class ClientUtils {
             "BALANCE",
             "CONFIRMS",
             "UTXO",
+            "ADDRESS",
+            "TYPE",
             "PATH",
             "STATUS",
             "MIXABLE",
             "POOL",
             "MIXS"));
-    sb.append(String.format(lineFormat, "(btc)", "", "", "", "", "", "", ""));
+    sb.append(String.format(lineFormat, "(btc)", "", "", "", "", "", "", "", "", ""));
     Iterator var3 = utxos.iterator();
 
     while (var3.hasNext()) {
@@ -203,30 +208,18 @@ public class ClientUtils {
           String.format(
               lineFormat,
               ClientUtils.satToBtc(o.value),
-              o.confirmations,
+              whirlpoolUtxo.computeConfirmations(latestBlockHeight),
               utxo,
-              o.getPath(),
+              o.addr,
+              whirlpoolUtxo.getAddressType(),
+              whirlpoolUtxo.getPathFull(),
               utxoState.getStatus().name(),
               mixableStatusName,
               whirlpoolUtxo.getPoolId() != null ? whirlpoolUtxo.getPoolId() : "-",
               whirlpoolUtxo.getMixsDone()));
     }
-
+    sb.append("Last block height: #" + latestBlockHeight);
     log.info("\n" + sb.toString());
-  }
-
-  public static Long computeUtxosBalance(Collection<WhirlpoolUtxo> utxos) {
-    long balance =
-        StreamSupport.stream(utxos)
-            .mapToLong(
-                new ToLongFunction<WhirlpoolUtxo>() {
-                  @Override
-                  public long applyAsLong(WhirlpoolUtxo utxo) {
-                    return utxo.getUtxo().value;
-                  }
-                })
-            .sum();
-    return balance;
   }
 
   public static double satToBtc(long sat) {
@@ -304,14 +297,6 @@ public class ClientUtils {
     return value.substring(0, Math.min(startEnd, value.length()))
         + "..."
         + value.substring(Math.max(0, value.length() - startEnd), value.length());
-  }
-
-  public static int random(int minInclusive, int maxInclusive) {
-    return ThreadLocalRandom.current().nextInt(minInclusive, maxInclusive + 1);
-  }
-
-  public static long random(long minInclusive, long maxInclusive) {
-    return ThreadLocalRandom.current().nextLong(minInclusive, maxInclusive + 1);
   }
 
   public static void safeWrite(File file, CallbackWithArg<File> callback) throws Exception {
@@ -411,7 +396,7 @@ public class ClientUtils {
         if (bech32Util.isP2WPKHScript(uo.script)) {
           nbP2WPKH++;
         } else {
-          String address = new Script(Hex.decode(uo.script)).getToAddress(params).toString();
+          String address = uo.computeScript().getToAddress(params).toString();
           if (Address.fromBase58(params, address).isP2SHAddress()) {
             nbP2SH++;
           } else {
@@ -442,11 +427,26 @@ public class ClientUtils {
     return spendValue;
   }
 
-  public static int countPrevTxs(Collection<UnspentOutputWithKey> spendFroms) {
+  public static int countPrevTxs(Collection<UnspentOutput> spendFroms) {
     Map<String, Boolean> mapByPrevTx = new LinkedHashMap<String, Boolean>();
-    for (UnspentOutputWithKey spendFrom : spendFroms) {
+    for (UnspentOutput spendFrom : spendFroms) {
       mapByPrevTx.put(spendFrom.tx_hash, true);
     }
     return mapByPrevTx.size();
+  }
+
+  public static File computeFile(String path) throws NotifiableException {
+    File f = new File(path);
+    if (!f.exists()) {
+      if (log.isDebugEnabled()) {
+        log.debug("Creating file " + path);
+      }
+      try {
+        f.createNewFile();
+      } catch (Exception e) {
+        throw new NotifiableException("Unable to write file " + path);
+      }
+    }
+    return f;
   }
 }
