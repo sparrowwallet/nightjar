@@ -17,16 +17,16 @@ public class UtxoConfigData extends PersistableData {
 
   private Map<String, UtxoConfigPersisted> utxoConfigs;
 
-  protected UtxoConfigData() {
+  public UtxoConfigData() {
     this(new LinkedHashMap<String, UtxoConfigPersisted>());
   }
 
-  protected UtxoConfigData(Map<String, UtxoConfigPersisted> utxoConfigs) {
+  public UtxoConfigData(Map<String, UtxoConfigPersisted> utxoConfigs) {
     super();
     this.utxoConfigs = utxoConfigs;
   }
 
-  protected Map<String, UtxoConfigPersisted> getUtxoConfigs() {
+  public Map<String, UtxoConfigPersisted> getUtxoConfigs() {
     return utxoConfigs;
   }
 

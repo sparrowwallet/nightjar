@@ -13,17 +13,17 @@ public class WalletStateData extends PersistableData {
 
   private Map<String, Integer> items;
 
-  protected WalletStateData() {
+  public WalletStateData() {
     this(new LinkedHashMap<String, Integer>());
   }
 
-  protected WalletStateData(Map<String, Integer> indexes) {
+  public WalletStateData(Map<String, Integer> indexes) {
     super();
     this.items = new LinkedHashMap<String, Integer>();
     this.items.putAll(indexes);
   }
 
-  protected WalletStateData copy() {
+  public WalletStateData copy() {
     return new WalletStateData(this.items);
   }
 
