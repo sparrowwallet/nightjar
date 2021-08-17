@@ -418,7 +418,7 @@ public class WhirlpoolWallet {
     return walletDataSupplier.getTx0ParamService();
   }
 
-  protected UtxoConfigSupplier getUtxoConfigSupplier() {
+  public UtxoConfigSupplier getUtxoConfigSupplier() {
     return walletDataSupplier.getUtxoConfigSupplier();
   }
 

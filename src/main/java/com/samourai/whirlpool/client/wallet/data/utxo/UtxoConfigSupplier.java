@@ -104,6 +104,14 @@ public class UtxoConfigSupplier extends AbstractPersistableSupplier<UtxoConfigDa
     return utxoConfigPersisted;
   }
 
+  public UtxoConfigPersisted getUtxoConfigPersisted(String hash, int index) {
+    String key = computeUtxoConfigKey(hash, index);
+
+    // get existing utxoConfig
+    UtxoConfigPersisted utxoConfigPersisted = getValue().getUtxoConfig(key);
+    return utxoConfigPersisted;
+  }
+
   public void forwardUtxoConfig(WhirlpoolUtxo fromUtxo, String hash, int index) {
     UnspentOutput utxo = fromUtxo.getUtxo();
     String fromKey = computeUtxoConfigKey(utxo.tx_hash, utxo.tx_output_n);
