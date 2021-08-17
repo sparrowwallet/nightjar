@@ -422,6 +422,10 @@ public class WhirlpoolWallet {
     return walletDataSupplier.getUtxoConfigSupplier();
   }
 
+  public void mixNow(WhirlpoolUtxo whirlpoolUtxo) throws NotifiableException {
+        mix(whirlpoolUtxo);
+    }
+
   public Observable<MixProgress> mix(WhirlpoolUtxo whirlpoolUtxo) throws NotifiableException {
     return mixOrchestrator.mixNow(whirlpoolUtxo);
   }

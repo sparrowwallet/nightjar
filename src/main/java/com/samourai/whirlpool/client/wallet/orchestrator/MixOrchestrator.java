@@ -572,6 +572,8 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
         WhirlpoolUtxoState utxoState = whirlpoolUtxo.getUtxoState();
         utxoState.setStatus(utxoState.getStatus(), true, mixProgress);
 
+        WhirlpoolEventService.getInstance().post(new MixProgressEvent(whirlpoolUtxo, mixProgress));
+
         // notify mixProgress
         getObservable().onNext(mixProgress);
       }
