@@ -5,12 +5,13 @@ import com.samourai.whirlpool.client.wallet.beans.WhirlpoolPoolByBalanceMinDescC
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.samourai.whirlpool.protocol.rest.PoolInfo;
 import com.samourai.whirlpool.protocol.rest.PoolsResponse;
-import java.util.*;
 import java8.util.function.Function;
 import java8.util.stream.Collectors;
 import java8.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 public class PoolData {
   private static final Logger log = LoggerFactory.getLogger(PoolData.class);
@@ -22,7 +23,7 @@ public class PoolData {
   }
 
   private static Map<String, Pool> computePools(
-      PoolsResponse poolsResponse, final Tx0ParamService tx0ParamService) {
+          PoolsResponse poolsResponse, final Tx0ParamService tx0ParamService) {
     // biggest balanceMin first
     List<Pool> poolsOrdered =
         StreamSupport.stream(Arrays.asList(poolsResponse.pools))

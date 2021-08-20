@@ -1,8 +1,9 @@
 package com.samourai.whirlpool.client.wallet.beans;
 
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
-import java.util.Comparator;
 import java8.lang.Longs;
+
+import java.util.Comparator;
 
 public class WhirlpoolPoolByBalanceMinDescComparator implements Comparator<Pool> {
   @Override

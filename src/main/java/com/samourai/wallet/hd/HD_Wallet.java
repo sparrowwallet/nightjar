@@ -4,7 +4,6 @@ import com.google.common.base.Joiner;
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.segwit.SegwitAddress;
 import com.samourai.wallet.util.FormatsUtilGeneric;
-import com.samourai.whirlpool.client.wallet.beans.WhirlpoolServer;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.crypto.*;
@@ -35,11 +34,7 @@ public class HD_Wallet {
         this(purpose, mc.toMnemonic(mSeed), mParams, mSeed, strPassphrase, nbAccounts);
     }
 
-    public HD_Wallet(int purpose, List<String> wordList, WhirlpoolServer whirlpoolServer, byte[] mSeed, String strPassphrase, int nbAccounts) {
-        this(purpose, wordList, whirlpoolServer.getParams(), mSeed, strPassphrase, nbAccounts);
-    }
-
-    protected HD_Wallet(int purpose, List<String> wordList, NetworkParameters mParams, byte[] mSeed, String strPassphrase, int nbAccounts) {
+    public HD_Wallet(int purpose, List<String> wordList, NetworkParameters mParams, byte[] mSeed, String strPassphrase, int nbAccounts) {
         this(mSeed, strPassphrase, wordList, mParams);
 
         // compute rootKey for accounts
@@ -87,6 +82,10 @@ public class HD_Wallet {
         int coin = FormatsUtilGeneric.getInstance().isTestNet(params) ? (1 | ChildNumber.HARDENED_BIT) : ChildNumber.HARDENED_BIT;
         DeterministicKey rootKey = HDKeyDerivation.deriveChildKey(t1, coin);
         return rootKey;
+    }
+
+    public byte[] getSeed() {
+        return mSeed;
     }
 
     public String getSeedHex() {

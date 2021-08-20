@@ -5,9 +5,7 @@ import com.samourai.wallet.util.AbstractOrchestrator;
 import com.samourai.whirlpool.client.WhirlpoolClient;
 import com.samourai.whirlpool.client.event.*;
 import com.samourai.whirlpool.client.exception.NotifiableException;
-import com.samourai.whirlpool.client.mix.listener.MixFailReason;
-import com.samourai.whirlpool.client.mix.listener.MixStep;
-import com.samourai.whirlpool.client.mix.listener.MixSuccess;
+import com.samourai.whirlpool.client.mix.listener.*;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.samourai.whirlpool.client.wallet.beans.*;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
@@ -15,8 +13,6 @@ import com.samourai.whirlpool.client.whirlpool.listener.LoggingWhirlpoolClientLi
 import com.samourai.whirlpool.client.whirlpool.listener.WhirlpoolClientListener;
 import io.reactivex.Observable;
 import io.reactivex.subjects.Subject;
-import java.util.Collections;
-import java.util.List;
 import java8.util.Optional;
 import java8.util.function.Consumer;
 import java8.util.function.Predicate;
@@ -27,10 +23,12 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
+
 public abstract class MixOrchestrator extends AbstractOrchestrator {
   private final Logger log = LoggerFactory.getLogger(MixOrchestrator.class);
   private static final int LAST_ERROR_DELAY = 60 * 5; // 5min
-  private static final int MIX_MIN_CONFIRMATIONS = 1;
   private static final int START_DELAY = 5000;
 
   private MixOrchestratorData data;
@@ -76,7 +74,7 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
   }
 
   protected abstract WhirlpoolClient runWhirlpoolClient(
-      WhirlpoolUtxo whirlpoolUtxo, WhirlpoolClientListener listener) throws NotifiableException;
+          WhirlpoolUtxo whirlpoolUtxo, WhirlpoolClientListener listener) throws NotifiableException;
 
   protected void stopWhirlpoolClient(Mixing mixing, boolean cancel, boolean reQueue) {
     if (log.isDebugEnabled()) {
@@ -174,7 +172,7 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
                 String poolId = mixing.getUtxo().getPoolId();
 
                 // should not interrupt a mix
-                MixProgress mixProgress = mixing.getUtxo().getUtxoState().getMixProgress();
+                MixProgressDetail mixProgress = mixing.getUtxo().getUtxoState().getMixProgress();
                 if (mixProgress != null && !mixProgress.getMixStep().isInterruptable()) {
                   return false;
                 }
@@ -355,39 +353,14 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
     Collections.sort(whirlpoolUtxos, WhirlpoolUtxoPriorityComparator.getInstance());
   }
 
-  private MixableStatus computeMixableStatus(WhirlpoolUtxo whirlpoolUtxo) {
-
-    // check pool
-    if (whirlpoolUtxo.getPoolId() == null) {
-      return MixableStatus.NO_POOL;
-    }
-
-    // check confirmations
-    int latestBlockHeight = data.getLatestBlockHeight();
-    if (whirlpoolUtxo.computeConfirmations(latestBlockHeight) < MIX_MIN_CONFIRMATIONS) {
-      return MixableStatus.UNCONFIRMED;
-    }
-
-    // ok
-    return MixableStatus.MIXABLE;
-  }
-
-  private boolean isNewMixable(WhirlpoolUtxo whirlpoolUtxo) {
-    boolean wasMixable =
+  private boolean isQueuedAndMixable(WhirlpoolUtxo whirlpoolUtxo) {
+    boolean isMixable =
         MixableStatus.MIXABLE.equals(whirlpoolUtxo.getUtxoState().getMixableStatus());
-
-    // refresh mixable status
-    MixableStatus mixableStatus = computeMixableStatus(whirlpoolUtxo);
-    whirlpoolUtxo.getUtxoState().setMixableStatus(mixableStatus);
-
-    boolean isMixable = MixableStatus.MIXABLE.equals(mixableStatus);
-
-    if (log.isTraceEnabled()) {
-      log.trace("refreshMixableStatus: " + wasMixable + " -> " + isMixable + " : " + whirlpoolUtxo);
-    }
-    if (!wasMixable
-        && isMixable
+    if (isMixable
         && WhirlpoolUtxoStatus.MIX_QUEUE.equals(whirlpoolUtxo.getUtxoState().getStatus())) {
+      if (log.isTraceEnabled()) {
+        log.trace("new MIXABLE in mixQueue: " + whirlpoolUtxo);
+      }
       return true;
     }
     return false;
@@ -470,7 +443,7 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
   }
 
   protected synchronized Observable<MixProgress> mix(
-      WhirlpoolUtxo whirlpoolUtxo, WhirlpoolUtxo mixingToSwap) throws NotifiableException {
+          WhirlpoolUtxo whirlpoolUtxo, WhirlpoolUtxo mixingToSwap) throws NotifiableException {
     if (!isStarted()) {
       throw new NotifiableException("Wallet is stopped");
     }
@@ -486,7 +459,7 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
     }
 
     // mix
-    MixProgress mixProgress = new MixProgress(MixStep.CONNECTING);
+    MixProgressDetail mixProgress = new MixProgressDetail(MixStep.CONNECTING);
     whirlpoolUtxo.getUtxoState().setStatus(WhirlpoolUtxoStatus.MIX_STARTED, true, mixProgress);
 
     // run mix
@@ -509,21 +482,19 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
       @Override
       public void success(MixSuccess mixSuccess) {
         super.success(mixSuccess);
-        MixProgressSuccess mixProgress =
-            new MixProgressSuccess(mixSuccess.getReceiveAddress(), mixSuccess.getReceiveUtxo());
 
         // update utxo
         WhirlpoolUtxoState utxoState = whirlpoolUtxo.getUtxoState();
-        utxoState.setStatus(WhirlpoolUtxoStatus.MIX_SUCCESS, true, mixProgress);
-        whirlpoolUtxo.incrementMixsDone();
+        utxoState.setStatus(
+            WhirlpoolUtxoStatus.MIX_SUCCESS, true, mixSuccess.getMixProgressDetail());
 
         // manage
         data.removeMixing(whirlpoolUtxo);
-        onMixSuccess(whirlpoolUtxo, mixSuccess);
-        WhirlpoolEventService.getInstance().post(new MixSuccessEvent(whirlpoolUtxo, mixSuccess));
+        onMixSuccess(mixSuccess);
+        WhirlpoolEventService.getInstance().post(new MixSuccessEvent(mixSuccess));
 
         // notify mixProgress
-        getObservable().onNext(mixProgress);
+        getObservable().onNext(mixSuccess);
         getObservable().onComplete();
 
         // idle => notify orchestrator
@@ -531,32 +502,35 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
       }
 
       @Override
-      public void fail(MixFailReason reason, String notifiableError) {
-        super.fail(reason, notifiableError);
-        MixProgress mixProgress = new MixProgressFail(reason);
+      public void fail(MixFail mixFail) {
+        super.fail(mixFail);
+        MixFailReason reason = mixFail.getMixFailReason();
 
         // update utxo
         String error = reason.getMessage();
+        String notifiableError = mixFail.getError();
         if (notifiableError != null) {
           error += " ; " + notifiableError;
         }
         WhirlpoolUtxoState utxoState = whirlpoolUtxo.getUtxoState();
         if (reason == MixFailReason.STOP) {
-          utxoState.setStatus(WhirlpoolUtxoStatus.STOP, false, mixProgress, error);
+          utxoState.setStatus(
+              WhirlpoolUtxoStatus.STOP, false, mixFail.getMixProgressDetail(), error);
         } else if (reason == MixFailReason.CANCEL) {
           // silent stop
-          utxoState.setStatus(WhirlpoolUtxoStatus.READY, false, mixProgress);
+          utxoState.setStatus(WhirlpoolUtxoStatus.READY, false, mixFail.getMixProgressDetail());
         } else {
-          utxoState.setStatus(WhirlpoolUtxoStatus.MIX_FAILED, true, mixProgress, error);
+          utxoState.setStatus(
+              WhirlpoolUtxoStatus.MIX_FAILED, true, mixFail.getMixProgressDetail(), error);
         }
 
         // manage
         data.removeMixing(whirlpoolUtxo);
-        onMixFail(whirlpoolUtxo, reason, notifiableError);
-        WhirlpoolEventService.getInstance().post(new MixFailEvent(whirlpoolUtxo, reason));
+        onMixFail(mixFail);
+        WhirlpoolEventService.getInstance().post(new MixFailEvent(mixFail));
 
         // notify mixProgress
-        getObservable().onNext(mixProgress);
+        getObservable().onNext(mixFail);
         getObservable().onComplete();
 
         // idle => notify orchestrator
@@ -564,15 +538,14 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
       }
 
       @Override
-      public void progress(MixStep step) {
-        super.progress(step);
-        MixProgress mixProgress = new MixProgress(step);
+      public void progress(MixProgress mixProgress) {
+        super.progress(mixProgress);
 
         // update utxo
         WhirlpoolUtxoState utxoState = whirlpoolUtxo.getUtxoState();
-        utxoState.setStatus(utxoState.getStatus(), true, mixProgress);
+        utxoState.setStatus(utxoState.getStatus(), true, mixProgress.getMixProgressDetail());
 
-        WhirlpoolEventService.getInstance().post(new MixProgressEvent(whirlpoolUtxo, mixProgress));
+        WhirlpoolEventService.getInstance().post(new MixProgressEvent(mixProgress));
 
         // notify mixProgress
         getObservable().onNext(mixProgress);
@@ -580,12 +553,11 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
     };
   }
 
-  protected void onMixSuccess(WhirlpoolUtxo whirlpoolUtxo, MixSuccess mixSuccess) {
+  protected void onMixSuccess(MixSuccess mixSuccess) {
     // override here
   }
 
-  protected void onMixFail(
-      WhirlpoolUtxo whirlpoolUtxo, MixFailReason reason, String notifiableError) {
+  protected void onMixFail(MixFail mixFail) {
     // override here
   }
 
@@ -623,8 +595,7 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
         notify = true;
         nbQueued++;
       }
-      // refresh MIXABLE status
-      if (isNewMixable(whirlpoolUtxo)) {
+      if (isQueuedAndMixable(whirlpoolUtxo)) {
         notify = true;
       }
     }
@@ -636,8 +607,7 @@ public abstract class MixOrchestrator extends AbstractOrchestrator {
 
     // CONFIRMED
     for (WhirlpoolUtxo whirlpoolUtxo : whirlpoolUtxoChanges.getUtxosConfirmed()) {
-      // refresh MIXABLE status
-      if (isNewMixable(whirlpoolUtxo)) {
+      if (isQueuedAndMixable(whirlpoolUtxo)) {
         notify = true;
       }
     }

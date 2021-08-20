@@ -1,6 +1,7 @@
 package com.samourai.whirlpool.client.wallet.beans;
 
 import com.samourai.whirlpool.client.WhirlpoolClient;
+import com.samourai.whirlpool.client.mix.listener.MixProgress;
 import io.reactivex.Observable;
 
 public class Mixing {
@@ -10,7 +11,7 @@ public class Mixing {
   private long since;
 
   public Mixing(
-      WhirlpoolUtxo utxo, WhirlpoolClient whirlpoolClient, Observable<MixProgress> observable) {
+          WhirlpoolUtxo utxo, WhirlpoolClient whirlpoolClient, Observable<MixProgress> observable) {
     this.utxo = utxo;
     this.whirlpoolClient = whirlpoolClient;
     this.observable = observable;

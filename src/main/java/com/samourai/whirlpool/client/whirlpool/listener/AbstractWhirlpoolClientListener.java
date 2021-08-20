@@ -1,9 +1,8 @@
 package com.samourai.whirlpool.client.whirlpool.listener;
 
-import com.samourai.whirlpool.client.mix.listener.MixFailReason;
-import com.samourai.whirlpool.client.mix.listener.MixStep;
+import com.samourai.whirlpool.client.mix.listener.MixFail;
+import com.samourai.whirlpool.client.mix.listener.MixProgress;
 import com.samourai.whirlpool.client.mix.listener.MixSuccess;
-import com.samourai.whirlpool.client.wallet.beans.MixProgress;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 
@@ -28,16 +27,16 @@ public abstract class AbstractWhirlpoolClientListener implements WhirlpoolClient
   }
 
   @Override
-  public void fail(MixFailReason reason, String notifiableError) {
+  public void fail(MixFail mixFail) {
     if (notifyListener != null) {
-      notifyListener.fail(reason, notifiableError);
+      notifyListener.fail(mixFail);
     }
   }
 
   @Override
-  public void progress(MixStep step) {
+  public void progress(MixProgress mixProgress) {
     if (notifyListener != null) {
-      notifyListener.progress(step);
+      notifyListener.progress(mixProgress);
     }
   }
 

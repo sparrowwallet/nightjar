@@ -1,43 +1,57 @@
 package com.samourai.whirlpool.client.wallet;
 
 import com.google.common.primitives.Bytes;
-import com.samourai.wallet.client.BipWalletAndAddressType;
 import com.samourai.wallet.hd.HD_Wallet;
-import com.samourai.wallet.hd.java.HD_WalletFactoryJava;
-import com.samourai.wallet.segwit.bech32.Bech32UtilGeneric;
+import com.samourai.wallet.hd.HD_WalletFactoryGeneric;
 import com.samourai.whirlpool.client.event.WalletCloseEvent;
 import com.samourai.whirlpool.client.event.WalletOpenEvent;
-import com.samourai.whirlpool.client.tx0.Tx0Service;
 import com.samourai.whirlpool.client.utils.ClientUtils;
-import com.samourai.whirlpool.client.wallet.data.minerFee.BackendWalletDataSupplier;
-import com.samourai.whirlpool.client.wallet.data.minerFee.WalletDataSupplier;
-import java.util.Map;
+import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersister;
+import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersisterFactory;
+import com.samourai.whirlpool.client.wallet.data.dataSource.DataSource;
+import com.samourai.whirlpool.client.wallet.data.dataSource.DataSourceFactory;
 import java8.util.Optional;
 import org.bitcoinj.core.NetworkParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 public class WhirlpoolWalletService {
   private final Logger log = LoggerFactory.getLogger(WhirlpoolWalletService.class);
 
-  private Optional<WhirlpoolWallet> whirlpoolWallet;
+  private DataPersisterFactory dataPersisterFactory;
+  private DataSourceFactory dataSourceFactory;
+  private HD_WalletFactoryGeneric hdWalletFactory;
+  private WhirlpoolWallet whirlpoolWallet; // or null
 
-  public WhirlpoolWalletService() {
-    this.whirlpoolWallet = Optional.empty();
+  public WhirlpoolWalletService(
+          DataPersisterFactory dataPersisterFactory, DataSourceFactory dataSourceFactory) {
+    this(dataPersisterFactory, dataSourceFactory, HD_WalletFactoryGeneric.getInstance());
+  }
+
+  public WhirlpoolWalletService(
+      DataPersisterFactory dataPersisterFactory,
+      DataSourceFactory dataSourceFactory,
+      HD_WalletFactoryGeneric hdWalletFactory) {
+    this.dataSourceFactory = dataSourceFactory;
+    this.dataPersisterFactory = dataPersisterFactory;
+    this.hdWalletFactory = hdWalletFactory;
+    this.whirlpoolWallet = null;
 
     // set user-agent
     ClientUtils.setupEnv();
   }
 
   public synchronized void closeWallet() {
-    if (whirlpoolWallet.isPresent()) {
+    if (whirlpoolWallet != null) {
       if (log.isDebugEnabled()) {
         log.debug("Closing wallet");
       }
-      WhirlpoolWallet wp = whirlpoolWallet.get();
+      WhirlpoolWallet wp = whirlpoolWallet;
       wp.stop();
       wp.close();
-      whirlpoolWallet = Optional.empty();
+      whirlpoolWallet = null;
 
       // notify close
       WhirlpoolEventService.getInstance().post(new WalletCloseEvent(wp));
@@ -49,47 +63,24 @@ public class WhirlpoolWalletService {
   }
 
   public WhirlpoolWallet openWallet(
-      WhirlpoolWalletConfig config, byte[] seed, String seedPassphrase) throws Exception {
+          WhirlpoolWalletConfig config, byte[] seed, String seedPassphrase) throws Exception {
     WhirlpoolWallet wp = computeWhirlpoolWallet(config, seed, seedPassphrase);
     return openWallet(wp);
   }
 
-  public WhirlpoolWallet openWallet(
-      WhirlpoolWalletConfig config, HD_Wallet bip44w, String walletIdentifier) throws Exception {
-    WhirlpoolWallet wp = computeWhirlpoolWallet(config, bip44w, walletIdentifier);
+  public WhirlpoolWallet openWallet(WhirlpoolWalletConfig config, HD_Wallet bip84w)
+      throws Exception {
+    WhirlpoolWallet wp = computeWhirlpoolWallet(config, bip84w);
     return openWallet(wp);
   }
 
   protected synchronized WhirlpoolWallet openWallet(WhirlpoolWallet wp) throws Exception {
-    if (whirlpoolWallet.isPresent()) {
+    if (whirlpoolWallet != null) {
       throw new Exception("WhirlpoolWallet already opened");
     }
 
     wp.open(); // load initial data
-    whirlpoolWallet = Optional.of(wp);
-
-    BipWalletAndAddressType depositWallet = wp.getWalletDeposit();
-    BipWalletAndAddressType premixWallet = wp.getWalletPremix();
-    BipWalletAndAddressType postmixWallet = wp.getWalletPostmix();
-
-    // log zpubs
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "Deposit wallet: accountIndex="
-              + depositWallet.getAccount().getAccountIndex()
-              + ", zpub="
-              + ClientUtils.maskString(depositWallet.getPub()));
-      log.debug(
-          "Premix wallet: accountIndex="
-              + premixWallet.getAccount().getAccountIndex()
-              + ", zpub="
-              + ClientUtils.maskString(premixWallet.getPub()));
-      log.debug(
-          "Postmix wallet: accountIndex="
-              + postmixWallet.getAccount().getAccountIndex()
-              + ", zpub="
-              + ClientUtils.maskString(postmixWallet.getPub()));
-    }
+    whirlpoolWallet = wp;
 
     // notify open
     WhirlpoolEventService.getInstance().post(new WalletOpenEvent(wp));
@@ -102,60 +93,44 @@ public class WhirlpoolWalletService {
         Bytes.concat(seed, seedPassphrase.getBytes(), params.getId().getBytes()));
   }
 
+  protected WhirlpoolWallet computeWhirlpoolWallet(WhirlpoolWalletConfig config, HD_Wallet bip84w)
+      throws Exception {
+    return computeWhirlpoolWallet(config, bip84w.getSeed(), bip84w.getPassphrase());
+  }
+
   protected WhirlpoolWallet computeWhirlpoolWallet(
-      WhirlpoolWalletConfig config, byte[] seed, String seedPassphrase) throws Exception {
+          WhirlpoolWalletConfig config, byte[] seed, String seedPassphrase) throws Exception {
     NetworkParameters params = config.getNetworkParameters();
     if (seedPassphrase == null) {
       seedPassphrase = "";
     }
     String walletIdentifier = computeWalletIdentifier(seed, seedPassphrase, params);
-    HD_Wallet bip44w = HD_WalletFactoryJava.getInstance().getBIP44(seed, seedPassphrase, params);
-    return computeWhirlpoolWallet(config, bip44w, walletIdentifier);
-  }
+    HD_Wallet bip44w = hdWalletFactory.getBIP44(seed, seedPassphrase, params);
 
-  protected WhirlpoolWallet computeWhirlpoolWallet(
-      WhirlpoolWalletConfig config, HD_Wallet bip44w, String walletIdentifier) throws Exception {
     // debug whirlpoolWalletConfig
     if (log.isDebugEnabled()) {
       log.debug("openWallet with whirlpoolWalletConfig:");
       for (Map.Entry<String, String> entry : config.getConfigInfo().entrySet()) {
         log.debug("[whirlpoolWalletConfig/" + entry.getKey() + "] " + entry.getValue());
       }
-      log.debug("walletIdentifier: " + walletIdentifier);
+      log.debug("[walletIdentifier] " + walletIdentifier);
     }
 
     // verify config
     config.verify();
 
-    Tx0Service tx0Service = new Tx0Service(config);
-    NetworkParameters params = config.getNetworkParameters();
-    Bech32UtilGeneric bech32Util = Bech32UtilGeneric.getInstance();
-    WalletAggregateService walletAggregateService = new WalletAggregateService(params, bech32Util);
-
-    WalletDataSupplier walletDataSupplier =
-        computeWalletDataSupplier(config, bip44w, walletIdentifier);
-
-    return new WhirlpoolWallet(
-        walletIdentifier,
-        config,
-        tx0Service,
-        walletAggregateService,
-        bech32Util,
-        walletDataSupplier);
-  }
-
-  // overridable for android
-  protected WalletDataSupplier computeWalletDataSupplier(
-      WhirlpoolWalletConfig config, HD_Wallet bip44w, String walletIdentifier) throws Exception {
-    return new BackendWalletDataSupplier(
-        config.getRefreshUtxoDelay(), config, bip44w, walletIdentifier);
+    DataPersister dataPersister =
+        dataPersisterFactory.createDataPersister(config, bip44w, walletIdentifier);
+    DataSource dataSource =
+        dataSourceFactory.createDataSource(config, bip44w, walletIdentifier, dataPersister);
+    return new WhirlpoolWallet(walletIdentifier, config, dataSource, dataPersister);
   }
 
   public Optional<WhirlpoolWallet> getWhirlpoolWallet() {
-    return whirlpoolWallet;
+    return Optional.of(whirlpoolWallet);
   }
 
-  public WhirlpoolWallet whirlpoolWallet() {
-      return whirlpoolWallet.isPresent() ? whirlpoolWallet.get() : null;
+  public WhirlpoolWallet getWhirlpoolWalletOrNull() {
+    return whirlpoolWallet;
   }
 }

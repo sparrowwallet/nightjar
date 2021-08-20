@@ -8,7 +8,7 @@ import com.samourai.whirlpool.client.WhirlpoolClient;
 import com.samourai.whirlpool.client.exception.NotifiableException;
 import com.samourai.whirlpool.client.mix.MixParams;
 import com.samourai.whirlpool.client.mix.handler.*;
-import com.samourai.whirlpool.client.mix.listener.MixFailReason;
+import com.samourai.whirlpool.client.mix.listener.MixFail;
 import com.samourai.whirlpool.client.mix.listener.MixSuccess;
 import com.samourai.whirlpool.client.utils.ClientUtils;
 import com.samourai.whirlpool.client.wallet.beans.*;
@@ -54,21 +54,20 @@ public class MixOrchestratorImpl extends MixOrchestrator {
   }
 
   @Override
-  protected void onMixSuccess(WhirlpoolUtxo whirlpoolUtxo, MixSuccess mixSuccess) {
-    super.onMixSuccess(whirlpoolUtxo, mixSuccess);
-    whirlpoolWallet.onMixSuccess(whirlpoolUtxo, mixSuccess);
+  protected void onMixSuccess(MixSuccess mixSuccess) {
+    super.onMixSuccess(mixSuccess);
+    whirlpoolWallet.onMixSuccess(mixSuccess);
   }
 
   @Override
-  protected void onMixFail(
-      WhirlpoolUtxo whirlpoolUtxo, MixFailReason reason, String notifiableError) {
-    super.onMixFail(whirlpoolUtxo, reason, notifiableError);
-    whirlpoolWallet.onMixFail(whirlpoolUtxo, reason, notifiableError);
+  protected void onMixFail(MixFail mixFail) {
+    super.onMixFail(mixFail);
+    whirlpoolWallet.onMixFail(mixFail);
   }
 
   @Override
   protected WhirlpoolClient runWhirlpoolClient(
-      WhirlpoolUtxo whirlpoolUtxo, WhirlpoolClientListener listener) throws NotifiableException {
+          WhirlpoolUtxo whirlpoolUtxo, WhirlpoolClientListener listener) throws NotifiableException {
     if (log.isDebugEnabled()) {
       log.info(
           " • Connecting client to pool: " + whirlpoolUtxo.getPoolId() + ", utxo=" + whirlpoolUtxo);
@@ -94,12 +93,13 @@ public class MixOrchestratorImpl extends MixOrchestrator {
   private MixParams computeMixParams(WhirlpoolUtxo whirlpoolUtxo, Pool pool) {
     IPremixHandler premixHandler = computePremixHandler(whirlpoolUtxo);
     IPostmixHandler postmixHandler = computePostmixHandler(whirlpoolUtxo);
-    return new MixParams(pool.getPoolId(), pool.getDenomination(), premixHandler, postmixHandler);
+    return new MixParams(
+        pool.getPoolId(), pool.getDenomination(), whirlpoolUtxo, premixHandler, postmixHandler);
   }
 
   @Override
   protected void stopWhirlpoolClient(
-      final Mixing mixing, final boolean cancel, final boolean reQueue) {
+          final Mixing mixing, final boolean cancel, final boolean reQueue) {
     super.stopWhirlpoolClient(mixing, cancel, reQueue);
 
     // stop in new thread for faster response
@@ -168,10 +168,11 @@ public class MixOrchestratorImpl extends MixOrchestrator {
             log.debug("Mixing to EXTERNAL (" + whirlpoolUtxo + ")");
           }
           return new XPubPostmixHandler(
+              whirlpoolWallet.getWalletStateSupplier().getExternalIndexHandler(),
+              config.getNetworkParameters(),
               externalDestination.getXpub(),
               externalDestination.getChain(),
-              externalDestination.getStartIndex(),
-              whirlpoolWallet.getWalletSupplier().getExternalIndexHandler());
+              externalDestination.getStartIndex());
         }
       } else {
         if (log.isDebugEnabled()) {
@@ -186,6 +187,7 @@ public class MixOrchestratorImpl extends MixOrchestrator {
         }
       }
     }
-    return new Bip84PostmixHandler(whirlpoolWallet.getWalletPostmix(), config.isMobile());
+    return new Bip84PostmixHandler(
+        config.getNetworkParameters(), whirlpoolWallet.getWalletPostmix(), config.isMobile());
   }
 }

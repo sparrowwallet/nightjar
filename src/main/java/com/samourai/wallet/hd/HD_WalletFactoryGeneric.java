@@ -13,11 +13,20 @@ import java.util.Arrays;
 import java.util.List;
 
 public class HD_WalletFactoryGeneric {
-  public static final String BIP39_ENGLISH_SHA256 = "ad90bf3beb7b0eb7e5acd74727dc0da96e0a280a258354e7293fb7e211ac03db";
-  public static final String BIP39_ENGLISH_FILENAME = "/mnemonic/wordlist/english.txt";
+  private static HD_WalletFactoryGeneric instance = null;
+
+  public static HD_WalletFactoryGeneric getInstance() {
+    if(instance == null) {
+      instance = new HD_WalletFactoryGeneric();
+    }
+    return instance;
+  }
 
   private MnemonicCode mc;
 
+  public HD_WalletFactoryGeneric() {
+    this(Bip39English.getInstance().getMnemonicCode());
+  }
   public HD_WalletFactoryGeneric(MnemonicCode mc) {
     this.mc = mc;
   }

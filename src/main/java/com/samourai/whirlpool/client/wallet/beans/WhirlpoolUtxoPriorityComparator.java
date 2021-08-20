@@ -1,7 +1,8 @@
 package com.samourai.whirlpool.client.wallet.beans;
 
-import java.util.Comparator;
 import java8.lang.Longs;
+
+import java.util.Comparator;
 
 public class WhirlpoolUtxoPriorityComparator implements Comparator<WhirlpoolUtxo> {
   private static final WhirlpoolUtxoPriorityComparator instance =
@@ -67,7 +68,7 @@ public class WhirlpoolUtxoPriorityComparator implements Comparator<WhirlpoolUtxo
 
   private boolean isMixingSlow(WhirlpoolUtxo whirlpoolUtxo) {
     WhirlpoolUtxoState s = whirlpoolUtxo.getUtxoState();
-    MixProgress mixProgress = s.getMixProgress();
+    MixProgressDetail mixProgress = s.getMixProgress();
     if (mixProgress == null) {
       // not mixing
       return false;

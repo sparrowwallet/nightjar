@@ -32,7 +32,7 @@ public class PremixHandler implements IPremixHandler {
 
   // TODO
   private void signInputSegwit(
-      Transaction tx, int inputIdx, ECKey ecKey, long spendAmount, NetworkParameters params) {
+          Transaction tx, int inputIdx, ECKey ecKey, long spendAmount, NetworkParameters params) {
     final SegwitAddress segwitAddress = new SegwitAddress(ecKey, params);
     final Script redeemScript = segwitAddress.segWitRedeemScript();
     final Script scriptCode = redeemScript.scriptCode();

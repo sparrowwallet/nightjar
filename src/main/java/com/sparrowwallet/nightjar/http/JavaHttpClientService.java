@@ -4,7 +4,6 @@ import com.google.common.net.HostAndPort;
 import com.samourai.http.client.HttpUsage;
 import com.samourai.http.client.IHttpClientService;
 import com.samourai.whirlpool.client.utils.ClientUtils;
-import com.sparrowwallet.nightjar.Whirlpool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Socks4Proxy;

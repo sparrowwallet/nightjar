@@ -70,6 +70,7 @@ public class Tx0Preview {
     this.pool = pool;
   }
 
+  // used by Sparrow
   public Tx0Data getTx0Data() {
     return tx0Data;
   }

@@ -2,12 +2,10 @@ package com.samourai.whirlpool.client.wallet.beans;
 
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.whirlpool.client.utils.ClientUtils;
-import com.samourai.whirlpool.client.wallet.data.minerFee.ChainSupplier;
+import com.samourai.whirlpool.client.wallet.data.chain.ChainSupplier;
 import com.samourai.whirlpool.client.wallet.data.pool.PoolSupplier;
 import com.samourai.whirlpool.client.wallet.data.utxo.UtxoSupplier;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java8.util.function.Function;
 import java8.util.function.Predicate;
 import java8.util.stream.Collectors;
@@ -15,6 +13,9 @@ import java8.util.stream.Stream;
 import java8.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MixOrchestratorData {
   private final Logger log = LoggerFactory.getLogger(MixOrchestratorData.class);
@@ -149,6 +150,6 @@ public class MixOrchestratorData {
   }
 
   public int getLatestBlockHeight() {
-    return chainSupplier.getLatestBlockHeight();
+    return chainSupplier.getLatestBlock().height;
   }
 }

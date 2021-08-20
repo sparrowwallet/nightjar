@@ -15,7 +15,7 @@ public class MixingStateEditable extends MixingState {
 
   @Override
   public synchronized void set(
-      Collection<WhirlpoolUtxo> utxosMixing, Collection<WhirlpoolUtxo> utxosQueued) {
+          Collection<WhirlpoolUtxo> utxosMixing, Collection<WhirlpoolUtxo> utxosQueued) {
     super.set(utxosMixing, utxosQueued);
   }
 

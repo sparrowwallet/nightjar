@@ -5,10 +5,11 @@ import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import java.util.ArrayList;
-import java.util.Collection;
 import java8.util.function.Predicate;
 import java8.util.stream.StreamSupport;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class MixingState {
   private final WhirlpoolEventService eventService = WhirlpoolEventService.getInstance();
@@ -82,7 +83,7 @@ public class MixingState {
   }
 
   protected synchronized void set(
-      Collection<WhirlpoolUtxo> utxosMixing, Collection<WhirlpoolUtxo> utxosQueued) {
+          Collection<WhirlpoolUtxo> utxosMixing, Collection<WhirlpoolUtxo> utxosQueued) {
     doSetUtxosMixing(utxosMixing);
     doSetUtxosQueued(utxosQueued);
     emit();
