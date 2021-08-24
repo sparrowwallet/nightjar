@@ -42,7 +42,7 @@ public abstract class BasicUtxoSupplier extends BasicSupplier<UtxoData>
   private final PoolSupplier poolSupplier;
   private final Tx0ParamService tx0ParamService;
   private NetworkParameters params;
-  private UtxoConfigManager utxoConfigManager;
+  private UtxoConfigManager utxoConfigManager; // updates utxoConfig automatically
 
   private Map<String, WhirlpoolUtxo> previousUtxos;
 

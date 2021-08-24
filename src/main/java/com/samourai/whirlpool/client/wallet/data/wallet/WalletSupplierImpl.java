@@ -7,6 +7,7 @@ import com.samourai.wallet.hd.Chain;
 import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolAccount;
 import com.samourai.whirlpool.client.wallet.data.walletState.WalletStateSupplier;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,11 +70,18 @@ public class WalletSupplierImpl implements WalletSupplier {
 
   @Override
   public String[] getPubs(boolean withIgnoredAccounts) {
+    return getPubs(withIgnoredAccounts, null);
+  }
+
+  @Override
+  public String[] getPubs(boolean withIgnoredAccounts, AddressType... addressTypes) {
     List<String> pubs = new LinkedList<String>();
     for (BipWalletAndAddressType bipWallet : walletsByPub.values()) {
       if (withIgnoredAccounts || bipWallet.getAccount().isActive()) {
-        String pub = bipWallet.getPub();
-        pubs.add(pub);
+        if (addressTypes == null || ArrayUtils.contains(addressTypes, bipWallet.getAddressType())) {
+          String pub = bipWallet.getPub();
+          pubs.add(pub);
+        }
       }
     }
     return pubs.toArray(new String[] {});

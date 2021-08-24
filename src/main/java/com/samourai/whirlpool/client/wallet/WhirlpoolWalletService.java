@@ -127,7 +127,7 @@ public class WhirlpoolWalletService {
   }
 
   public Optional<WhirlpoolWallet> getWhirlpoolWallet() {
-    return Optional.of(whirlpoolWallet);
+    return Optional.ofNullable(whirlpoolWallet);
   }
 
   public WhirlpoolWallet getWhirlpoolWalletOrNull() {

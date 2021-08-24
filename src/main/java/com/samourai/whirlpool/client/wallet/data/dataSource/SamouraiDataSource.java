@@ -4,6 +4,7 @@ import com.samourai.wallet.api.backend.BackendApi;
 import com.samourai.wallet.api.backend.beans.TxsResponse;
 import com.samourai.wallet.api.backend.beans.WalletResponse;
 import com.samourai.wallet.api.backend.websocket.BackendWsApi;
+import com.samourai.wallet.hd.AddressType;
 import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.util.MessageListener;
 import com.samourai.whirlpool.client.exception.NotifiableException;
@@ -47,7 +48,7 @@ public class SamouraiDataSource extends WalletResponseDataSource {
 
       // initialize wallets
       if (!isInitialized) {
-        String[] activePubs = getWalletSupplier().getPubs(true);
+        String[] activePubs = getWalletSupplier().getPubs(true, AddressType.SEGWIT_NATIVE);
         for (String pub : activePubs) {
           initWallet(pub);
         }
