@@ -55,7 +55,7 @@ public class WhirlpoolProtocol {
 
   public static String getUrlTx0Data(String server, String poolId, String scode) {
     String url = server + WhirlpoolEndpoint.REST_TX0_DATA + "?poolId=" + poolId;
-    if (!StringUtils.isEmpty(url)) {
+    if (!StringUtils.isEmpty(scode)) {
       url += "&scode=" + scode;
     }
     return url;
