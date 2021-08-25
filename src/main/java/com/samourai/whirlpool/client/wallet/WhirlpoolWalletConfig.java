@@ -9,6 +9,9 @@ import com.samourai.wallet.util.FormatsUtilGeneric;
 import com.samourai.whirlpool.client.tx0.ITx0ParamServiceConfig;
 import com.samourai.whirlpool.client.utils.ClientUtils;
 import com.samourai.whirlpool.client.wallet.beans.Tx0FeeTarget;
+import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersisterFactory;
+import com.samourai.whirlpool.client.wallet.data.dataPersister.FileDataPersisterFactory;
+import com.samourai.whirlpool.client.wallet.data.dataSource.DataSourceFactory;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
 import com.samourai.whirlpool.client.whirlpool.WhirlpoolClientConfig;
 import com.samourai.whirlpool.protocol.WhirlpoolProtocol;
@@ -22,6 +25,9 @@ import java.util.Map;
 
 public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0ParamServiceConfig {
   private final Logger log = LoggerFactory.getLogger(WhirlpoolWalletConfig.class);
+
+  private DataSourceFactory dataSourceFactory;
+  private DataPersisterFactory dataPersisterFactory;
 
   private int maxClients;
   private int maxClientsPerPool;
@@ -48,10 +54,12 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
 
   private boolean resyncOnFirstRun;
   private boolean strictMode;
+  private int persistDelaySeconds;
 
   private ISecretPointFactory secretPointFactory;
 
   public WhirlpoolWalletConfig(
+      DataSourceFactory dataSourceFactory,
       IHttpClientService httpClientService,
       IStompClientService stompClientService,
       TorClientService torClientService,
@@ -59,6 +67,9 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
       NetworkParameters params,
       boolean mobile) {
     super(httpClientService, stompClientService, torClientService, serverApi, null, params, mobile);
+
+    this.dataSourceFactory = dataSourceFactory;
+    this.dataPersisterFactory = new FileDataPersisterFactory();
 
     // default settings
     this.maxClients = mobile ? 1 : 5;
@@ -87,6 +98,7 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
 
     this.resyncOnFirstRun = false;
     this.strictMode = true;
+    this.persistDelaySeconds = 10;
 
     this.secretPointFactory = SecretPointFactoryJava.getInstance();
   }
@@ -103,6 +115,18 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
     if (autoTx0Aggregate && StringUtils.isEmpty(autoTx0PoolId)) {
       throw new RuntimeException("--auto-tx0 is required for --auto-tx0-aggregate");
     }
+  }
+
+  public DataSourceFactory getDataSourceFactory() {
+    return dataSourceFactory;
+  }
+
+  public DataPersisterFactory getDataPersisterFactory() {
+    return dataPersisterFactory;
+  }
+
+  public void setDataPersisterFactory(DataPersisterFactory dataPersisterFactory) {
+    this.dataPersisterFactory = dataPersisterFactory;
   }
 
   public int getMaxClients() {
@@ -285,6 +309,14 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
     this.strictMode = strictMode;
   }
 
+  public int getPersistDelaySeconds() {
+    return persistDelaySeconds;
+  }
+
+  public void setPersistDelaySeconds(int persistDelaySeconds) {
+    this.persistDelaySeconds = persistDelaySeconds;
+  }
+
   public ISecretPointFactory getSecretPointFactory() {
     return secretPointFactory;
   }
@@ -295,6 +327,8 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
 
   public Map<String, String> getConfigInfo() {
     Map<String, String> configInfo = new LinkedHashMap<String, String>();
+    configInfo.put("dataSourceFactory", dataSourceFactory.getClass().getSimpleName());
+    configInfo.put("dataPersisterFactory", dataPersisterFactory.getClass().getSimpleName());
     configInfo.put("protocolVersion", WhirlpoolProtocol.PROTOCOL_VERSION);
     configInfo.put(
         "server", getServerApi() + ", network=" + getNetworkParameters().getPaymentProtocolId());
@@ -340,6 +374,7 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
         "fee", "fallback=" + getFeeFallback() + ", min=" + getFeeMin() + ", max=" + getFeeMax());
     configInfo.put("resyncOnFirstRun", Boolean.toString(resyncOnFirstRun));
     configInfo.put("strictMode", Boolean.toString(strictMode));
+    configInfo.put("persistDelaySeconds", Integer.toString(persistDelaySeconds));
     return configInfo;
   }
 }

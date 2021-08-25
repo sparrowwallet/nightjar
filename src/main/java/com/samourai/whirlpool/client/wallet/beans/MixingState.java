@@ -1,7 +1,5 @@
 package com.samourai.whirlpool.client.wallet.beans;
 
-import com.samourai.whirlpool.client.event.MixStateChangeEvent;
-import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
@@ -12,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class MixingState {
-  private final WhirlpoolEventService eventService = WhirlpoolEventService.getInstance();
-
   private boolean started;
   private Collection<WhirlpoolUtxo> utxosMixing;
   private int nbMixing;
@@ -101,7 +97,6 @@ public class MixingState {
 
   protected void emit() {
     // notify
-    eventService.post(new MixStateChangeEvent());
     observable.onNext(this);
   }
 

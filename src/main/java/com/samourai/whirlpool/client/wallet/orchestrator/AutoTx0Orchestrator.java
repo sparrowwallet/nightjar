@@ -1,18 +1,12 @@
 package com.samourai.whirlpool.client.wallet.orchestrator;
 
-import com.google.common.eventbus.Subscribe;
 import com.samourai.wallet.util.AbstractOrchestrator;
-import com.samourai.whirlpool.client.event.UtxosChangeEvent;
-import com.samourai.whirlpool.client.event.WalletCloseEvent;
-import com.samourai.whirlpool.client.event.WalletStartEvent;
-import com.samourai.whirlpool.client.event.WalletStopEvent;
 import com.samourai.whirlpool.client.exception.AutoTx0InsufficientBalanceException;
 import com.samourai.whirlpool.client.exception.NotifiableException;
 import com.samourai.whirlpool.client.tx0.Tx0;
 import com.samourai.whirlpool.client.tx0.Tx0Config;
 import com.samourai.whirlpool.client.tx0.Tx0ParamService;
 import com.samourai.whirlpool.client.utils.ClientUtils;
-import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletConfig;
 import com.samourai.whirlpool.client.wallet.beans.*;
@@ -42,13 +36,6 @@ public class AutoTx0Orchestrator extends AbstractOrchestrator {
     this.whirlpoolWallet = whirlpoolWallet;
     this.config = config;
     this.tx0ParamService = tx0ParamService;
-
-    WhirlpoolEventService.getInstance().register(this);
-  }
-
-  @Subscribe
-  public void onWalletClose(WalletCloseEvent walletCloseEvent) {
-    WhirlpoolEventService.getInstance().unregister(this);
   }
 
   @Override
@@ -221,25 +208,11 @@ public class AutoTx0Orchestrator extends AbstractOrchestrator {
     }
   }
 
-  @Subscribe
-  public void onWalletStart(WalletStartEvent walletStartEvent) {
-    // start orchestrator
-    start(true);
-  }
-
-  @Subscribe
-  public void onWalletStop(WalletStopEvent walletStopEvent) {
-    // stop orchestrator
-    stop();
-  }
-
-  @Subscribe
-  public void onUtxosChange(UtxosChangeEvent utxosChangeEvent) {
+  public void onUtxoChanges(WhirlpoolUtxoChanges whirlpoolUtxoChanges) {
     if (!isStarted()) {
       return;
     }
 
-    WhirlpoolUtxoChanges whirlpoolUtxoChanges = utxosChangeEvent.getUtxoData().getUtxoChanges();
     boolean notify = false;
 
     // DETECTED

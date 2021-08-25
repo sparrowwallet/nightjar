@@ -3,7 +3,7 @@ package com.samourai.whirlpool.client.wallet.data.utxoConfig;
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.whirlpool.client.utils.ClientUtils;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxo;
-import com.samourai.whirlpool.client.wallet.data.supplier.AbstractPersistableSupplier;
+import com.samourai.whirlpool.client.wallet.data.supplier.BasicPersistableSupplier;
 import java8.util.function.Function;
 import java8.util.stream.Collectors;
 import java8.util.stream.StreamSupport;
@@ -13,18 +13,12 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.List;
 
-public class PersistableUtxoConfigSupplier extends AbstractPersistableSupplier<UtxoConfigData>
+public class UtxoConfigPersistedSupplier extends BasicPersistableSupplier<UtxoConfigData>
     implements UtxoConfigSupplier {
-  private static final Logger log = LoggerFactory.getLogger(PersistableUtxoConfigSupplier.class);
+  private static final Logger log = LoggerFactory.getLogger(UtxoConfigPersistedSupplier.class);
 
-  public PersistableUtxoConfigSupplier(UtxoConfigPersister persister) throws Exception {
+  public UtxoConfigPersistedSupplier(UtxoConfigPersister persister) throws Exception {
     super(null, persister, log);
-  }
-
-  @Override
-  public UtxoConfigPersisted getTx(String txHash) {
-    String key = computeUtxoConfigKey(txHash);
-    return getValue().getUtxoConfig(key);
   }
 
   @Override
@@ -34,14 +28,17 @@ public class PersistableUtxoConfigSupplier extends AbstractPersistableSupplier<U
   }
 
   @Override
-  public void saveTx(String txHash, UtxoConfigPersisted utxoConfigPersisted) {
-    String key = computeUtxoConfigKey(txHash);
-    getValue().add(key, utxoConfigPersisted);
-  }
-
-  @Override
-  public void saveUtxo(String hash, int index, UtxoConfigPersisted utxoConfigPersisted) {
+  public void setUtxo(String hash, int index, int mixsDone) {
     String key = computeUtxoConfigKey(hash, index);
+    UtxoConfigPersisted utxoConfigPersisted = getUtxo(hash, index);
+    if (utxoConfigPersisted == null) {
+      utxoConfigPersisted = new UtxoConfigPersisted(mixsDone, null);
+      if (log.isDebugEnabled()) {
+        log.debug("+utxoConfig: " + hash + ":" + index + " => " + utxoConfigPersisted);
+      }
+    } else {
+      utxoConfigPersisted.setMixsDone(mixsDone);
+    }
     getValue().add(key, utxoConfigPersisted);
   }
 
@@ -58,17 +55,10 @@ public class PersistableUtxoConfigSupplier extends AbstractPersistableSupplier<U
                   }
                 })
             .collect(Collectors.<String>toList());
-    int nbCleaned = getValue().cleanup(validKeys);
-    if (log.isDebugEnabled()) {
-      log.debug(nbCleaned + " utxoConfig cleaned");
-    }
+    getValue().cleanup(validKeys);
   }
 
   protected String computeUtxoConfigKey(String hash, int index) {
     return ClientUtils.sha256Hash(ClientUtils.utxoToKey(hash, index));
-  }
-
-  private String computeUtxoConfigKey(String utxoHash) {
-    return ClientUtils.sha256Hash(utxoHash);
   }
 }

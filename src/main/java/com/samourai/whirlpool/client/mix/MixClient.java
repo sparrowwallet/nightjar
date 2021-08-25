@@ -3,10 +3,12 @@ package com.samourai.whirlpool.client.mix;
 import com.samourai.whirlpool.client.exception.NotifiableException;
 import com.samourai.whirlpool.client.mix.dialog.MixDialogListener;
 import com.samourai.whirlpool.client.mix.dialog.MixSession;
-import com.samourai.whirlpool.client.mix.listener.*;
+import com.samourai.whirlpool.client.mix.listener.MixFailReason;
+import com.samourai.whirlpool.client.mix.listener.MixStep;
 import com.samourai.whirlpool.client.utils.ClientCryptoService;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
 import com.samourai.whirlpool.client.whirlpool.WhirlpoolClientConfig;
+import com.samourai.whirlpool.client.whirlpool.listener.WhirlpoolClientListener;
 import com.samourai.whirlpool.protocol.WhirlpoolProtocol;
 import com.samourai.whirlpool.protocol.rest.RegisterOutputRequest;
 import com.samourai.whirlpool.protocol.websocket.messages.*;
@@ -33,7 +35,7 @@ public class MixClient {
 
   // mix settings
   private MixParams mixParams;
-  private MixClientListener listener;
+  private WhirlpoolClientListener listener;
 
   private ClientCryptoService clientCryptoService;
   private WhirlpoolProtocol whirlpoolProtocol;
@@ -56,15 +58,14 @@ public class MixClient {
     this.whirlpoolProtocol = whirlpoolProtocol;
   }
 
-  public void whirlpool(MixParams mixParams, MixClientListener listener) {
+  public void whirlpool(MixParams mixParams, WhirlpoolClientListener listener) {
     this.mixParams = mixParams;
     this.listener = listener;
     connect();
   }
 
   private void listenerProgress(MixStep mixStep) {
-    MixProgress mixProgress = new MixProgress(mixParams, mixStep);
-    this.listener.progress(mixProgress);
+    this.listener.progress(mixStep);
   }
 
   private void connect() {
@@ -99,7 +100,7 @@ public class MixClient {
 
   private void failAndExit(MixFailReason reason, String notifiableError) {
     mixParams.getPostmixHandler().onMixFail();
-    this.listener.fail(new MixFail(mixParams, reason, notifiableError));
+    this.listener.fail(reason, notifiableError);
     disconnect();
   }
 
@@ -230,7 +231,7 @@ public class MixClient {
         disconnect();
         // notify
         listenerProgress(MixStep.SUCCESS);
-        listener.success(new MixSuccess(mixParams, mixProcess.getReceiveUtxo()));
+        listener.success(mixProcess.getReceiveUtxo());
       }
 
       @Override

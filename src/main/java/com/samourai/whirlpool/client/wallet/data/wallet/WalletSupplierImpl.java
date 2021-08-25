@@ -20,7 +20,7 @@ public class WalletSupplierImpl implements WalletSupplier {
   private final Map<String, BipWalletAndAddressType> walletsByPub;
 
   public WalletSupplierImpl(HD_Wallet bip44w, WalletStateSupplier walletStateSupplier) {
-    // instanciate wallets
+    // instantiate wallets
     this.wallets = new LinkedHashMap<WhirlpoolAccount, Map<AddressType, BipWalletAndAddressType>>();
     this.walletsByPub = new LinkedHashMap<String, BipWalletAndAddressType>();
     for (WhirlpoolAccount account : WhirlpoolAccount.values()) {
@@ -29,9 +29,9 @@ public class WalletSupplierImpl implements WalletSupplier {
           new LinkedHashMap<AddressType, BipWalletAndAddressType>();
       for (AddressType addressType : account.getAddressTypes()) {
         IIndexHandler indexHandler =
-            walletStateSupplier.computeIndexHandler(account, addressType, Chain.RECEIVE);
+            walletStateSupplier.getIndexHandlerWallet(account, addressType, Chain.RECEIVE);
         IIndexHandler indexChangeHandler =
-            walletStateSupplier.computeIndexHandler(account, addressType, Chain.CHANGE);
+            walletStateSupplier.getIndexHandlerWallet(account, addressType, Chain.CHANGE);
         BipWalletAndAddressType bipWallet =
             new BipWalletAndAddressType(
                 bip44w, account, indexHandler, indexChangeHandler, addressType);
@@ -70,7 +70,7 @@ public class WalletSupplierImpl implements WalletSupplier {
 
   @Override
   public String[] getPubs(boolean withIgnoredAccounts) {
-    return getPubs(withIgnoredAccounts, null);
+    return getPubs(withIgnoredAccounts, (AddressType[]) null);
   }
 
   @Override
