@@ -351,7 +351,7 @@ public class WhirlpoolWallet {
 
     // notify startup
     UtxoData utxoData = getUtxoSupplier().getValue();
-    WhirlpoolEventService.getInstance().post(new WalletStartEvent(this, utxoData));
+    WhirlpoolEventService.getInstance().post(new WalletStartEvent(utxoData));
     WhirlpoolEventService.getInstance().post(new UtxosChangeEvent(utxoData));
   }
 
@@ -367,7 +367,7 @@ public class WhirlpoolWallet {
     mixingState.setStarted(false);
 
     // notify stop
-    WhirlpoolEventService.getInstance().post(new WalletStopEvent(this));
+    WhirlpoolEventService.getInstance().post(new WalletStopEvent());
   }
 
   public void mixQueue(WhirlpoolUtxo whirlpoolUtxo) throws NotifiableException {
