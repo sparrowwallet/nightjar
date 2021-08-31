@@ -1,11 +1,23 @@
 package com.samourai.whirlpool.client.wallet.beans;
 
+import com.samourai.whirlpool.client.event.MixStateChangeEvent;
+import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
+import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
+
 import java.util.Collection;
 
 public class MixingStateEditable extends MixingState {
+  private WhirlpoolWallet whirlpoolWallet;
 
-  public MixingStateEditable(boolean started) {
+  public MixingStateEditable(WhirlpoolWallet whirlpoolWallet, boolean started) {
     super(started);
+    this.whirlpoolWallet = whirlpoolWallet;
+  }
+
+  @Override
+  protected void emit() {
+    super.emit();
+    WhirlpoolEventService.getInstance().post(new MixStateChangeEvent(whirlpoolWallet));
   }
 
   @Override
@@ -15,7 +27,7 @@ public class MixingStateEditable extends MixingState {
 
   @Override
   public synchronized void set(
-      Collection<WhirlpoolUtxo> utxosMixing, Collection<WhirlpoolUtxo> utxosQueued) {
+          Collection<WhirlpoolUtxo> utxosMixing, Collection<WhirlpoolUtxo> utxosQueued) {
     super.set(utxosMixing, utxosQueued);
   }
 

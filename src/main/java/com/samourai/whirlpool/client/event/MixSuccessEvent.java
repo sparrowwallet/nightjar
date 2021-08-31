@@ -1,24 +1,18 @@
 package com.samourai.whirlpool.client.event;
 
-import com.samourai.whirlpool.client.mix.listener.MixSuccess;
-import com.samourai.whirlpool.client.wallet.beans.WhirlpoolEvent;
-import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxo;
+import com.samourai.whirlpool.client.mix.MixParams;
+import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
+import com.samourai.whirlpool.protocol.beans.Utxo;
 
-public class MixSuccessEvent extends WhirlpoolEvent {
-  private WhirlpoolUtxo whirlpoolUtxo;
-  private MixSuccess mixSuccess;
+public class MixSuccessEvent extends AbstractMixEvent {
+  private Utxo receiveUtxo;
 
-  public MixSuccessEvent(WhirlpoolUtxo whirlpoolUtxo, MixSuccess mixSuccess) {
-    super();
-    this.whirlpoolUtxo = whirlpoolUtxo;
-    this.mixSuccess = mixSuccess;
+  public MixSuccessEvent(WhirlpoolWallet whirlpoolWallet, MixParams mixParams, Utxo receiveUtxo) {
+    super(whirlpoolWallet, mixParams);
+    this.receiveUtxo = receiveUtxo;
   }
 
-  public WhirlpoolUtxo getWhirlpoolUtxo() {
-    return whirlpoolUtxo;
-  }
-
-  public MixSuccess getMixSuccess() {
-    return mixSuccess;
+  public Utxo getReceiveUtxo() {
+    return receiveUtxo;
   }
 }

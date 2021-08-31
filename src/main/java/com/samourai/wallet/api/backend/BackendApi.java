@@ -2,7 +2,6 @@ package com.samourai.wallet.api.backend;
 
 import com.samourai.wallet.api.backend.beans.*;
 import com.samourai.wallet.util.oauth.OAuthManager;
-import java8.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,22 +23,19 @@ public class BackendApi {
 
   private IBackendClient httpClient;
   private String urlBackend;
-  private Optional<OAuthManager> oAuthManager;
+  private OAuthManager oAuthManager; // may be null
 
   public BackendApi(IBackendClient httpClient, String urlBackend) {
     this(httpClient, urlBackend, null);
   }
 
-  public BackendApi(IBackendClient httpClient, String urlBackend, Optional<OAuthManager> oAuthManager) {
+  public BackendApi(IBackendClient httpClient, String urlBackend, OAuthManager oAuthManager) {
     this.httpClient = httpClient;
     this.urlBackend = urlBackend;
 
-    if (oAuthManager == null) {
-      oAuthManager = Optional.empty();
-    }
     this.oAuthManager = oAuthManager;
     if (log.isDebugEnabled()) {
-      String oAuthStr = oAuthManager.isPresent() ? "yes" : "no";
+      String oAuthStr = oAuthManager != null ? "yes" : "no";
       log.debug("urlBackend=" + urlBackend + ", oAuth=" + oAuthStr);
     }
   }
@@ -49,18 +45,10 @@ public class BackendApi {
     return zpubStr;
   }
 
-  /**
-   * @deprecated use fetchWallet()
-   */
-  @Deprecated
   public List<UnspentOutput> fetchUtxos(String zpub) throws Exception {
     return fetchUtxos(new String[]{zpub});
   }
 
-  /**
-   * @deprecated use fetchWallet()
-   */
-  @Deprecated
   public List<UnspentOutput> fetchUtxos(String[] zpubs) throws Exception {
     String zpubStr = computeZpubStr(zpubs);
     String url = computeAuthUrl(urlBackend + URL_UNSPENT + zpubStr);
@@ -77,10 +65,6 @@ public class BackendApi {
     return unspentOutputs;
   }
 
-  /**
-   * @deprecated use fetchWallet()
-   */
-  @Deprecated
   public Map<String,MultiAddrResponse.Address> fetchAddresses(String[] zpubs) throws Exception {
     String zpubStr = computeZpubStr(zpubs);
     String url = computeAuthUrl(urlBackend + URL_MULTIADDR + zpubStr);
@@ -98,10 +82,6 @@ public class BackendApi {
     return addressesByZpub;
   }
 
-  /**
-   * @deprecated use fetchWallet()
-   */
-  @Deprecated
   public MultiAddrResponse.Address fetchAddress(String zpub) throws Exception {
     Collection<MultiAddrResponse.Address> addresses = fetchAddresses(new String[]{zpub}).values();
     if (addresses.size() != 1) {
@@ -111,20 +91,16 @@ public class BackendApi {
 
     if (log.isDebugEnabled()) {
       log.debug(
-          "fetchAddress "
-              + zpub
-              + ": account_index="
-              + address.account_index
-              + ", change_index="
-              + address.change_index);
+              "fetchAddress "
+                      + zpub
+                      + ": account_index="
+                      + address.account_index
+                      + ", change_index="
+                      + address.change_index);
     }
     return address;
   }
 
-  /**
-   * @deprecated use fetchWallet()
-   */
-  @Deprecated
   public TxsResponse fetchTxs(String[] zpubs, int page, int count) throws Exception {
     String zpubStr = computeZpubStr(zpubs);
 
@@ -185,6 +161,10 @@ public class BackendApi {
   }
 
   public void pushTx(String txHex) throws Exception {
+    pushTx(txHex, null);
+  }
+
+  public void pushTx(String txHex, List<Integer> strictModeVouts) throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("pushTx... " + txHex);
     } else {
@@ -194,22 +174,53 @@ public class BackendApi {
     Map<String,String> headers = computeHeaders();
     Map<String, String> postBody = new HashMap<String, String>();
     postBody.put("tx", txHex);
+
+    if(strictModeVouts != null && !strictModeVouts.isEmpty()) {
+      String strStrictVouts = "";
+      for(int i = 0; i < strictModeVouts.size(); i++) {
+        strStrictVouts += strictModeVouts.get(i);
+        if(i < (strictModeVouts.size() - 1)) {
+          strStrictVouts += "|";
+        }
+      }
+      postBody.put("strict_mode_vouts", strStrictVouts);
+    }
+
     try {
-      httpClient.postUrlEncoded(url, Void.class, headers, postBody);
+      PushTxResponse pushTxResponse = httpClient.postUrlEncoded(url, PushTxResponse.class, headers, postBody);
+      checkPushTxResponse(pushTxResponse);
     } catch (HttpException e) {
       if (log.isDebugEnabled()) {
         log.error("pushTx failed", e);
       }
       log.error(
-          "PushTx failed: response="
-              + e.getResponseBody()
-              + ". error="
-              + e.getMessage()
-              + " for txHex="
-              + txHex);
-      throw new Exception(
-          "PushTx failed (" + e.getResponseBody() + ") for txHex=" + txHex);
+              "PushTx failed: response="
+                      + e.getResponseBody()
+                      + ". error="
+                      + e.getMessage()
+                      + " for txHex="
+                      + txHex);
+      throw new Exception("PushTx failed (" + e.getResponseBody() + ") for txHex=" + txHex);
     }
+  }
+
+  protected void checkPushTxResponse(PushTxResponse pushTxResponse) throws Exception {
+    if (pushTxResponse.status == PushTxResponse.PushTxStatus.ok) {
+      // success
+      return;
+    }
+
+    if (log.isDebugEnabled()) {
+      log.error("pushTx failed: "+pushTxResponse.toString());
+    }
+
+    // address reuse
+    if (pushTxResponse.error != null && PushTxResponse.PushTxError.CODE_VIOLATION_STRICT_MODE_VOUTS.equals(pushTxResponse.error.code)) {
+      throw new PushTxAddressReuseException();
+    }
+
+    // other error
+    throw new Exception("PushTx failed: "+pushTxResponse.toString());
   }
 
   public boolean testConnectivity() {
@@ -224,9 +235,9 @@ public class BackendApi {
 
   protected Map<String,String> computeHeaders() throws Exception {
     Map<String,String> headers = new HashMap<String, String>();
-    if (oAuthManager.isPresent()) {
+    if (oAuthManager != null) {
       // add auth token
-      headers.put("Authorization", "Bearer " + oAuthManager.get().getOAuthAccessToken());
+      headers.put("Authorization", "Bearer " + oAuthManager.getOAuthAccessToken());
     }
     return headers;
   }

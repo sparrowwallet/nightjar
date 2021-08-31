@@ -8,11 +8,6 @@ public class HttpException extends Exception {
     this.responseBody = responseBody;
   }
 
-  @Override
-  public String getMessage() {
-    return super.getMessage();
-  }
-
   public String getResponseBody() {
     return responseBody;
   }

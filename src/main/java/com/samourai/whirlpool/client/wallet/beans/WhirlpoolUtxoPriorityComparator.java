@@ -1,7 +1,8 @@
 package com.samourai.whirlpool.client.wallet.beans;
 
-import java.util.Comparator;
 import java8.lang.Longs;
+
+import java.util.Comparator;
 
 public class WhirlpoolUtxoPriorityComparator implements Comparator<WhirlpoolUtxo> {
   private static final WhirlpoolUtxoPriorityComparator instance =

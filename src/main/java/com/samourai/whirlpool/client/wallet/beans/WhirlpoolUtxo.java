@@ -2,14 +2,17 @@ package com.samourai.whirlpool.client.wallet.beans;
 
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.hd.AddressType;
-import com.samourai.whirlpool.client.wallet.data.utxo.UtxoConfigPersisted;
-import com.samourai.whirlpool.client.wallet.data.utxo.UtxoConfigSupplier;
-import java.util.Collection;
+import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfig;
+import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigPersisted;
+import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WhirlpoolUtxo extends WhirlpoolUtxoConfig {
+import java.util.Collection;
+
+public class WhirlpoolUtxo {
   private static final Logger log = LoggerFactory.getLogger(WhirlpoolUtxo.class);
+  private static final int MIX_MIN_CONFIRMATIONS = 1;
 
   private UnspentOutput utxo;
   private Integer blockHeight; // null when unconfirmed
@@ -21,18 +24,53 @@ public class WhirlpoolUtxo extends WhirlpoolUtxoConfig {
 
   public WhirlpoolUtxo(
       UnspentOutput utxo,
-      Integer blockHeight,
       WhirlpoolAccount account,
       AddressType addressType,
-      WhirlpoolUtxoStatus status,
-      UtxoConfigSupplier utxoConfigSupplier) {
+      String poolId,
+      UtxoConfigSupplier utxoConfigSupplier,
+      int latestBlockHeight) {
     super();
     this.utxo = utxo;
-    this.blockHeight = blockHeight;
+    this.blockHeight = computeBlockHeight(utxo.confirmations, latestBlockHeight);
     this.account = account;
     this.addressType = addressType;
-    this.utxoState = new WhirlpoolUtxoState(status);
+    this.utxoState = new WhirlpoolUtxoState(poolId);
     this.utxoConfigSupplier = utxoConfigSupplier;
+
+    this.setMixableStatus(latestBlockHeight);
+  }
+
+  private Integer computeBlockHeight(int utxoConfirmations, int latestBlockHeight) {
+    if (utxoConfirmations <= 0) {
+      return null;
+    }
+    return latestBlockHeight - utxoConfirmations;
+  }
+
+  private void setMixableStatus(int latestBlockHeight) {
+    MixableStatus mixableStatus = computeMixableStatus(latestBlockHeight);
+    utxoState.setMixableStatus(mixableStatus);
+  }
+
+  public void setUtxoConfirmed(UnspentOutput utxo, int latestBlockHeight) {
+    this.utxo = utxo;
+    this.blockHeight = computeBlockHeight(utxo.confirmations, latestBlockHeight);
+    this.setMixableStatus(latestBlockHeight);
+  }
+
+  private MixableStatus computeMixableStatus(int latestBlockHeight) {
+    // check pool
+    if (utxoState.getPoolId() == null) {
+      return MixableStatus.NO_POOL;
+    }
+
+    // check confirmations
+    if (computeConfirmations(latestBlockHeight) < MIX_MIN_CONFIRMATIONS) {
+      return MixableStatus.UNCONFIRMED;
+    }
+
+    // ok
+    return MixableStatus.MIXABLE;
   }
 
   public static long sumValue(Collection<WhirlpoolUtxo> whirlpoolUtxos) {
@@ -50,23 +88,25 @@ public class WhirlpoolUtxo extends WhirlpoolUtxoConfig {
     return latestBlockHeight - blockHeight;
   }
 
-  @Override
-  protected UtxoConfigPersisted getUtxoConfigPersisted() {
-    // always fetch fresh instance from supplier
-    return utxoConfigSupplier.getUtxoConfigPersisted(this);
+  public UtxoConfig getUtxoConfigOrDefault() {
+    UtxoConfig utxoConfig = utxoConfigSupplier.getUtxo(utxo.tx_hash, utxo.tx_output_n);
+    if (utxoConfig == null) {
+      int mixsDone = account == WhirlpoolAccount.POSTMIX ? 1 : 0;
+      utxoConfig = new UtxoConfigPersisted(mixsDone, null);
+    }
+    return utxoConfig;
   }
 
-  protected UtxoConfigSupplier getUtxoConfigSupplier() {
-    return utxoConfigSupplier;
+  public int getMixsDone() {
+    return getUtxoConfigOrDefault().getMixsDone();
+  }
+
+  public void setMixsDone(int mixsDone) {
+    utxoConfigSupplier.setUtxo(utxo.tx_hash, utxo.tx_output_n, mixsDone);
   }
 
   public UnspentOutput getUtxo() {
     return utxo;
-  }
-
-  public void _setUtxoConfirmed(UnspentOutput utxo, Integer blockHeight) {
-    this.utxo = utxo;
-    this.blockHeight = blockHeight;
   }
 
   public Integer getBlockHeight() {
@@ -103,16 +143,17 @@ public class WhirlpoolUtxo extends WhirlpoolUtxoConfig {
 
   @Override
   public String toString() {
+    UtxoConfig utxoConfig = getUtxoConfigOrDefault();
     return account
         + " / "
         + addressType
         + ": "
         + utxo.toString()
-        + ": (#"
+        + ", blockHeight="
         + (blockHeight != null ? blockHeight : "unconfirmed")
-        + ") "
         + utxoState
-        + " ; "
-        + getUtxoConfigPersisted();
+        + ", utxoConfig={"
+        + utxoConfig
+        + "}";
   }
 }

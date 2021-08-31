@@ -2,7 +2,7 @@ package com.samourai.wallet.util;
 
 import com.samourai.wallet.bip47.rpc.BIP47Wallet;
 import com.samourai.wallet.hd.HD_Wallet;
-import com.samourai.wallet.hd.java.HD_WalletFactoryJava;
+import com.samourai.wallet.hd.HD_WalletFactoryGeneric;
 import com.samourai.wallet.segwit.SegwitAddress;
 import com.samourai.wallet.segwit.bech32.Bech32UtilGeneric;
 import org.bitcoinj.core.*;
@@ -11,7 +11,7 @@ import org.bitcoinj.wallet.KeyChain;
 import org.bitcoinj.wallet.KeyChainGroup;
 
 public class CryptoTestUtil {
-    private static final HD_WalletFactoryJava hdWalletFactory = HD_WalletFactoryJava.getInstance();
+    private static final HD_WalletFactoryGeneric hdWalletFactory = HD_WalletFactoryGeneric.getInstance();
     private CryptoTestUtil() {}
 
     private static CryptoTestUtil instance = null;

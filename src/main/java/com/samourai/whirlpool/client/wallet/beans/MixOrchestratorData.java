@@ -2,12 +2,10 @@ package com.samourai.whirlpool.client.wallet.beans;
 
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.whirlpool.client.utils.ClientUtils;
-import com.samourai.whirlpool.client.wallet.data.minerFee.ChainSupplier;
+import com.samourai.whirlpool.client.wallet.data.chain.ChainSupplier;
 import com.samourai.whirlpool.client.wallet.data.pool.PoolSupplier;
 import com.samourai.whirlpool.client.wallet.data.utxo.UtxoSupplier;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java8.util.function.Function;
 import java8.util.function.Predicate;
 import java8.util.stream.Collectors;
@@ -15,6 +13,9 @@ import java8.util.stream.Stream;
 import java8.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MixOrchestratorData {
   private final Logger log = LoggerFactory.getLogger(MixOrchestratorData.class);
@@ -60,6 +61,10 @@ public class MixOrchestratorData {
     return poolSupplier.getPools();
   }
 
+  public Pool findPoolById(String poolId) {
+    return poolSupplier.findPoolById(poolId);
+  }
+
   public void clear() {
     mixing.clear();
     mixingHashs.clear();
@@ -101,7 +106,7 @@ public class MixOrchestratorData {
   private Map<String, Integer> computeMixingPerPool() {
     Map<String, Integer> mixingPerPool = new HashMap<String, Integer>();
     for (Mixing mixingItem : mixing.values()) {
-      String poolId = mixingItem.getUtxo().getPoolId();
+      String poolId = mixingItem.getUtxo().getUtxoState().getPoolId();
       int currentCount = mixingPerPool.containsKey(poolId) ? mixingPerPool.get(poolId) : 0;
       mixingPerPool.put(poolId, currentCount + 1);
     }
@@ -132,7 +137,7 @@ public class MixOrchestratorData {
             new Predicate<Mixing>() {
               @Override
               public boolean test(Mixing mixing) {
-                return mixing.getUtxo().getPoolId().equals(poolId)
+                return mixing.getUtxo().getUtxoState().getPoolId().equals(poolId)
                     && mixing.getUtxo().isAccountPostmix() == liquidity;
               }
             })
@@ -149,6 +154,6 @@ public class MixOrchestratorData {
   }
 
   public int getLatestBlockHeight() {
-    return chainSupplier.getLatestBlockHeight();
+    return chainSupplier.getLatestBlock().height;
   }
 }

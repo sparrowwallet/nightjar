@@ -20,7 +20,7 @@ public class Bech32UtilGeneric {
 
     private static Bech32UtilGeneric instance = null;
 
-    private Bech32UtilGeneric() { ; }
+    protected Bech32UtilGeneric() { ; }
 
     public static Bech32UtilGeneric getInstance() {
 
@@ -44,33 +44,20 @@ public class Bech32UtilGeneric {
     }
 
     public String getAddressFromScript(String script, NetworkParameters params) throws Exception    {
-
-        String hrp = null;
-        if(params instanceof TestNet3Params)    {
-            hrp = "tb";
-        }
-        else    {
-            hrp = "bc";
-        }
-
+        String hrp = getHrp(params);
         return Bech32Segwit.encode(hrp, (byte)0x00, Hex.decode(script.substring(4).getBytes()));
     }
 
     public String getAddressFromScript(Script script, NetworkParameters params) throws Exception    {
-
-        String hrp = null;
-        if(params instanceof TestNet3Params)    {
-            hrp = "tb";
-        }
-        else    {
-            hrp = "bc";
-        }
-
+        String hrp = getHrp(params);
         byte[] buf = script.getProgram();
         byte[] scriptBytes = new byte[buf.length - 2];
         System.arraycopy(buf, 2, scriptBytes, 0, scriptBytes.length);
-
         return Bech32Segwit.encode(hrp, (byte)0x00, scriptBytes);
+    }
+
+    protected String getHrp(NetworkParameters params) {
+        return params instanceof TestNet3Params ? "tb" : "bc";
     }
 
     public String getAddressFromScript(TransactionOutput output) throws Exception    {
@@ -86,8 +73,8 @@ public class Bech32UtilGeneric {
 
     public byte[] computeScriptPubKey(String address, NetworkParameters params) throws Exception {
         // decode bech32
-        boolean isTestNet = !(params instanceof MainNetParams);
-        Pair<Byte, byte[]> pair = Bech32Segwit.decode(isTestNet ? "tb" : "bc", address);
+        String hrp = getHrp(params);
+        Pair<Byte, byte[]> pair = Bech32Segwit.decode(hrp, address);
 
         // get scriptPubkey
         return Bech32Segwit.getScriptPubkey(pair.getLeft(), pair.getRight());

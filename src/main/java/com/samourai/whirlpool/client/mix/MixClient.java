@@ -3,12 +3,12 @@ package com.samourai.whirlpool.client.mix;
 import com.samourai.whirlpool.client.exception.NotifiableException;
 import com.samourai.whirlpool.client.mix.dialog.MixDialogListener;
 import com.samourai.whirlpool.client.mix.dialog.MixSession;
-import com.samourai.whirlpool.client.mix.listener.MixClientListener;
 import com.samourai.whirlpool.client.mix.listener.MixFailReason;
 import com.samourai.whirlpool.client.mix.listener.MixStep;
 import com.samourai.whirlpool.client.utils.ClientCryptoService;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
 import com.samourai.whirlpool.client.whirlpool.WhirlpoolClientConfig;
+import com.samourai.whirlpool.client.whirlpool.listener.WhirlpoolClientListener;
 import com.samourai.whirlpool.protocol.WhirlpoolProtocol;
 import com.samourai.whirlpool.protocol.rest.RegisterOutputRequest;
 import com.samourai.whirlpool.protocol.websocket.messages.*;
@@ -35,7 +35,7 @@ public class MixClient {
 
   // mix settings
   private MixParams mixParams;
-  private MixClientListener listener;
+  private WhirlpoolClientListener listener;
 
   private ClientCryptoService clientCryptoService;
   private WhirlpoolProtocol whirlpoolProtocol;
@@ -58,7 +58,7 @@ public class MixClient {
     this.whirlpoolProtocol = whirlpoolProtocol;
   }
 
-  public void whirlpool(MixParams mixParams, MixClientListener listener) {
+  public void whirlpool(MixParams mixParams, WhirlpoolClientListener listener) {
     this.mixParams = mixParams;
     this.listener = listener;
     connect();
@@ -230,8 +230,8 @@ public class MixClient {
         // disconnect before notifying listener to avoid reconnecting before disconnect
         disconnect();
         // notify
-        listener.progress(MixStep.SUCCESS);
-        listener.success(mixProcess.computeMixSuccess());
+        listenerProgress(MixStep.SUCCESS);
+        listener.success(mixProcess.getReceiveUtxo());
       }
 
       @Override

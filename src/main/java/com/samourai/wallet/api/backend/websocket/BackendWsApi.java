@@ -20,19 +20,19 @@ public class BackendWsApi {
   private boolean connected;
   private IWebsocketClient wsClient;
   private String urlBackend;
-  private Optional<OAuthManager> oAuthManager;
+  private OAuthManager oAuthManager; // or null
 
   private MessageListener<WSResponseBlock> blockListener;
   private MessageListener<WSResponseUtxo> addressListener;
   private boolean terminated;
 
-  public BackendWsApi(IWebsocketClient wsClient, String urlBackend, Optional<OAuthManager> oAuthManager) {
+  public BackendWsApi(IWebsocketClient wsClient, String urlBackend, OAuthManager oAuthManager) {
     this.connected = false;
     this.wsClient = wsClient;
     this.urlBackend = urlBackend;
-    this.oAuthManager = oAuthManager != null ? oAuthManager : Optional.empty();
+    this.oAuthManager = oAuthManager;
     if (log.isDebugEnabled()) {
-      String oAuthStr = oAuthManager.isPresent() ? "yes" : "no";
+      String oAuthStr = oAuthManager != null ? "yes" : "no";
       log.debug("urlBackend=" + urlBackend + ", oAuth=" + oAuthStr);
     }
 
@@ -206,9 +206,9 @@ public class BackendWsApi {
   }
 
   private String getAccessToken() throws Exception {
-    if (!oAuthManager.isPresent()) {
+    if (oAuthManager == null) {
       return null;
     }
-    return oAuthManager.get().getOAuthAccessToken();
+    return oAuthManager.getOAuthAccessToken();
   }
 }

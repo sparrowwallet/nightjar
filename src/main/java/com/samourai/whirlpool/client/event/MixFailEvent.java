@@ -1,24 +1,28 @@
 package com.samourai.whirlpool.client.event;
 
+import com.samourai.whirlpool.client.mix.MixParams;
 import com.samourai.whirlpool.client.mix.listener.MixFailReason;
-import com.samourai.whirlpool.client.wallet.beans.WhirlpoolEvent;
-import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxo;
+import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
 
-public class MixFailEvent extends WhirlpoolEvent {
-  private WhirlpoolUtxo whirlpoolUtxo;
+public class MixFailEvent extends AbstractMixEvent {
   private MixFailReason mixFailReason;
+  private String error; // may be null
 
-  public MixFailEvent(WhirlpoolUtxo whirlpoolUtxo, MixFailReason mixFailReason) {
-    super();
-    this.whirlpoolUtxo = whirlpoolUtxo;
+  public MixFailEvent(
+      WhirlpoolWallet whirlpoolWallet,
+      MixParams mixParams,
+      MixFailReason mixFailReason,
+      String error) {
+    super(whirlpoolWallet, mixParams);
     this.mixFailReason = mixFailReason;
-  }
-
-  public WhirlpoolUtxo getWhirlpoolUtxo() {
-    return whirlpoolUtxo;
+    this.error = error;
   }
 
   public MixFailReason getMixFailReason() {
     return mixFailReason;
+  }
+
+  public String getError() {
+    return error;
   }
 }
