@@ -11,6 +11,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +83,7 @@ public class JavaHttpClientService implements IHttpClientService {
         threadPool.setName(name);
         threadPool.setDaemon(true);
         jettyHttpClient.setExecutor(threadPool);
+        jettyHttpClient.setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", true));
 
         // prevent user-agent tracking
         jettyHttpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, userAgent));
