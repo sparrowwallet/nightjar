@@ -10,6 +10,7 @@ import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings("UnstableApiUsage")
 public class JavaHttpClientService implements IHttpClientService {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final String WHIRLPOOL_HTTPCLIENT = "Whirlpool-HttpClient";
 
     private final Map<HttpUsage, JavaHttpClient> httpClients;
     private HostAndPort torProxy;
@@ -27,6 +29,10 @@ public class JavaHttpClientService implements IHttpClientService {
     public JavaHttpClientService(HostAndPort torProxy) {
         this.httpClients = new ConcurrentHashMap<>();
         this.torProxy = torProxy;
+    }
+
+    public HostAndPort getTorProxy() {
+        return torProxy;
     }
 
     public void setTorProxy(HostAndPort torProxy) {
@@ -47,7 +53,7 @@ public class JavaHttpClientService implements IHttpClientService {
     }
 
     private JavaHttpClient computeHttpClient(HttpUsage httpUsage) {
-        HttpClient httpClient = computeHttpClient(torProxy);
+        HttpClient httpClient = computeHttpClient(httpUsage, torProxy);
         return new JavaHttpClient(httpUsage, httpClient, 30000);
     }
 
@@ -61,14 +67,21 @@ public class JavaHttpClientService implements IHttpClientService {
         // don't break non-REST connexions, it will be renewed on next connexion
     }
 
-    public static HttpClient computeHttpClient(HostAndPort proxy) {
-        return computeHttpClient(proxy, ClientUtils.USER_AGENT);
+    public static HttpClient computeHttpClient(HttpUsage httpUsage, HostAndPort proxy) {
+        return computeHttpClient(httpUsage, proxy, ClientUtils.USER_AGENT);
     }
 
-    public static HttpClient computeHttpClient(HostAndPort proxy, String userAgent) {
+    public static HttpClient computeHttpClient(HttpUsage httpUsage, HostAndPort proxy, String userAgent) {
+        String name = WHIRLPOOL_HTTPCLIENT + "-" + httpUsage.toString();
+
         // we use jetty for proxy SOCKS support
         HttpClient jettyHttpClient = new HttpClient(new SslContextFactory.Client.Client());
-        // jettyHttpClient.setSocketAddressResolver(new MySocketAddressResolver());
+        jettyHttpClient.setName(name);
+
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setName(name);
+        threadPool.setDaemon(true);
+        jettyHttpClient.setExecutor(threadPool);
 
         // prevent user-agent tracking
         jettyHttpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, userAgent));
