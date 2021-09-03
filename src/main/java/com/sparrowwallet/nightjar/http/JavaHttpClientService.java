@@ -17,14 +17,19 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings("UnstableApiUsage")
 public class JavaHttpClientService implements IHttpClientService {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final Map<HttpUsage, JavaHttpClient> httpClients;
-    private final HostAndPort torProxy;
+    private HostAndPort torProxy;
 
     public JavaHttpClientService(HostAndPort torProxy) {
         this.httpClients = new ConcurrentHashMap<>();
+        this.torProxy = torProxy;
+    }
+
+    public void setTorProxy(HostAndPort torProxy) {
         this.torProxy = torProxy;
     }
 
@@ -89,5 +94,7 @@ public class JavaHttpClientService implements IHttpClientService {
         for(JavaHttpClient javaHttpClient : httpClients.values()) {
             javaHttpClient.stop();
         }
+
+        httpClients.clear();
     }
 }
