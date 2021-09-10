@@ -12,6 +12,7 @@ import com.samourai.wallet.util.CallbackWithArg;
 import com.samourai.wallet.util.FeeUtil;
 import com.samourai.wallet.util.FormatsUtilGeneric;
 import com.samourai.whirlpool.client.exception.NotifiableException;
+import com.samourai.whirlpool.client.wallet.beans.IndexRange;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxo;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxoState;
 import com.samourai.whirlpool.protocol.WhirlpoolProtocol;
@@ -20,14 +21,7 @@ import com.samourai.whirlpool.protocol.rest.RestErrorResponse;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import java8.util.Optional;
-import org.bitcoinj.core.*;
-import org.bouncycastle.crypto.params.RSAKeyParameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.security.KeyFactory;
@@ -35,6 +29,11 @@ import java.security.SecureRandom;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
+import java8.util.Optional;
+import org.bitcoinj.core.*;
+import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClientUtils {
   private static final Logger log = LoggerFactory.getLogger(ClientUtils.class);
@@ -57,7 +56,7 @@ public class ClientUtils {
           String outputAddressBech32, Transaction tx, NetworkParameters params) {
     try {
       byte[] expectedScriptBytes =
-          Bech32UtilGeneric.getInstance().computeScriptPubKey(outputAddressBech32, params);
+              Bech32UtilGeneric.getInstance().computeScriptPubKey(outputAddressBech32, params);
       for (TransactionOutput output : tx.getOutputs()) {
         if (Arrays.equals(output.getScriptBytes(), expectedScriptBytes)) {
           return output.getIndex();
@@ -79,9 +78,9 @@ public class ClientUtils {
 
   public static RSAKeyParameters publicKeyUnserialize(byte[] publicKeySerialized) throws Exception {
     RSAPublicKey rsaPublicKey =
-        (RSAPublicKey)
-            KeyFactory.getInstance("RSA")
-                .generatePublic(new X509EncodedKeySpec(publicKeySerialized));
+            (RSAPublicKey)
+                    KeyFactory.getInstance("RSA")
+                            .generatePublic(new X509EncodedKeySpec(publicKeySerialized));
     return new RSAKeyParameters(false, rsaPublicKey.getModulus(), rsaPublicKey.getPublicExponent());
   }
 
@@ -108,12 +107,12 @@ public class ClientUtils {
   private static String parseRestErrorMessage(String responseBody) {
     try {
       RestErrorResponse restErrorResponse =
-          ClientUtils.fromJson(responseBody, RestErrorResponse.class);
+              ClientUtils.fromJson(responseBody, RestErrorResponse.class);
       return restErrorResponse.message;
     } catch (Exception e) {
       log.error(
-          "parseRestErrorMessage failed: responseBody="
-              + (responseBody != null ? responseBody : "null"));
+              "parseRestErrorMessage failed: responseBody="
+                      + (responseBody != null ? responseBody : "null"));
       return null;
     }
   }
@@ -150,9 +149,13 @@ public class ClientUtils {
   }
 
   public static int computeNextReceiveAddressIndex(
-          IIndexHandler postmixIndexHandler, boolean mobile) {
-    // Android => odd indexs, CLI => even indexs
-    int modulo = mobile ? 1 : 0;
+          IIndexHandler postmixIndexHandler, IndexRange indexRange) {
+    // full range
+    if (indexRange == IndexRange.FULL) {
+      return postmixIndexHandler.getAndIncrementUnconfirmed();
+    }
+
+    int modulo = indexRange == IndexRange.ODD ? 1 : 0;
     int index;
     do {
       index = postmixIndexHandler.getAndIncrementUnconfirmed();
@@ -169,14 +172,14 @@ public class ClientUtils {
     for (UnspentOutput o : utxos) {
       String utxo = o.tx_hash + ":" + o.tx_output_n;
       sb.append(
-          String.format(
-              lineFormat,
-              satToBtc(o.value),
-              o.confirmations,
-              utxo,
-              o.addr,
-              AddressType.findByAddress(o.addr, params),
-              o.getPathFull(purpose, accountIndex)));
+              String.format(
+                      lineFormat,
+                      satToBtc(o.value),
+                      o.confirmations,
+                      utxo,
+                      o.addr,
+                      AddressType.findByAddress(o.addr, params),
+                      o.getPathFull(purpose, accountIndex)));
     }
     log.info("\n" + sb.toString());
   }
@@ -185,18 +188,18 @@ public class ClientUtils {
     String lineFormat = "| %10s | %7s | %68s | %45s | %13s | %27s | %14s | %8s | %8s | %4s |\n";
     StringBuilder sb = new StringBuilder();
     sb.append(
-        String.format(
-            lineFormat,
-            "BALANCE",
-            "CONFIRM",
-            "UTXO",
-            "ADDRESS",
-            "TYPE",
-            "PATH",
-            "STATUS",
-            "MIXABLE",
-            "POOL",
-            "MIXS"));
+            String.format(
+                    lineFormat,
+                    "BALANCE",
+                    "CONFIRM",
+                    "UTXO",
+                    "ADDRESS",
+                    "TYPE",
+                    "PATH",
+                    "STATUS",
+                    "MIXABLE",
+                    "POOL",
+                    "MIXS"));
     sb.append(String.format(lineFormat, "(btc)", "", "", "", "", "", "", "", "", ""));
     Iterator var3 = utxos.iterator();
 
@@ -206,22 +209,22 @@ public class ClientUtils {
       UnspentOutput o = whirlpoolUtxo.getUtxo();
       String utxo = o.tx_hash + ":" + o.tx_output_n;
       String mixableStatusName =
-          utxoState.getMixableStatus() != null ? utxoState.getMixableStatus().name() : "-";
+              utxoState.getMixableStatus() != null ? utxoState.getMixableStatus().name() : "-";
       sb.append(
-          String.format(
-              lineFormat,
-              ClientUtils.satToBtc(o.value),
-              whirlpoolUtxo.computeConfirmations(latestBlockHeight),
-              utxo,
-              o.addr,
-              whirlpoolUtxo.getAddressType(),
-              whirlpoolUtxo.getPathFull(),
-              utxoState.getStatus().name(),
-              mixableStatusName,
-              whirlpoolUtxo.getUtxoState().getPoolId() != null
-                  ? whirlpoolUtxo.getUtxoState().getPoolId()
-                  : "-",
-              whirlpoolUtxo.getMixsDone()));
+              String.format(
+                      lineFormat,
+                      ClientUtils.satToBtc(o.value),
+                      whirlpoolUtxo.computeConfirmations(latestBlockHeight),
+                      utxo,
+                      o.addr,
+                      whirlpoolUtxo.getAddressType(),
+                      whirlpoolUtxo.getPathFull(),
+                      utxoState.getStatus().name(),
+                      mixableStatusName,
+                      whirlpoolUtxo.getUtxoState().getPoolId() != null
+                              ? whirlpoolUtxo.getUtxoState().getPoolId()
+                              : "-",
+                      whirlpoolUtxo.getMixsDone()));
     }
     log.info("\n" + sb.toString());
   }
@@ -243,7 +246,7 @@ public class ClientUtils {
   }
 
   public static String getTxHex(Transaction tx) {
-    String txHex = Utils.HEX.encode(tx.bitcoinSerialize());
+    String txHex = org.bitcoinj.core.Utils.HEX.encode(tx.bitcoinSerialize());
     return txHex;
   }
 
@@ -262,7 +265,7 @@ public class ClientUtils {
                 // wait for delay
                 boolean isTestnet = FormatsUtilGeneric.getInstance().isTestNet(params);
                 int sleepDelay =
-                    isTestnet ? SLEEP_REFRESH_UTXOS_TESTNET : SLEEP_REFRESH_UTXOS_MAINNET;
+                        isTestnet ? SLEEP_REFRESH_UTXOS_TESTNET : SLEEP_REFRESH_UTXOS_MAINNET;
                 try {
                   Thread.sleep(sleepDelay);
                 } catch (InterruptedException e) {
@@ -279,7 +282,7 @@ public class ClientUtils {
               }
             },
             "refreshUtxos")
-        .start();
+            .start();
     return observable;
   }
 
@@ -303,8 +306,8 @@ public class ClientUtils {
       return value;
     }
     return value.substring(0, Math.min(startEnd, value.length()))
-        + "..."
-        + value.substring(Math.max(0, value.length() - startEnd), value.length());
+            + "..."
+            + value.substring(Math.max(0, value.length() - startEnd), value.length());
   }
 
   public static void safeWrite(File file, CallbackWithArg<File> callback) throws Exception {
@@ -329,32 +332,32 @@ public class ClientUtils {
       Files.move(tempFile, file);
     } catch (Exception e) {
       log.error(
-          "safeWrite failed for "
-              + (tempFile != null ? tempFile.getAbsolutePath() : "null")
-              + " ->"
-              + file.getAbsolutePath());
+              "safeWrite failed for "
+                      + (tempFile != null ? tempFile.getAbsolutePath() : "null")
+                      + " ->"
+                      + file.getAbsolutePath());
       throw e;
     }
   }
 
   public static void safeWriteValue(final ObjectMapper mapper, final Object value, final File file)
-      throws Exception {
+          throws Exception {
     CallbackWithArg<File> callback =
-        new CallbackWithArg<File>() {
-          @Override
-          public void apply(File tempFile) throws Exception {
-            mapper.writeValue(tempFile, value);
-          }
-        };
+            new CallbackWithArg<File>() {
+              @Override
+              public void apply(File tempFile) throws Exception {
+                mapper.writeValue(tempFile, value);
+              }
+            };
     safeWrite(file, callback);
   }
 
   public static FileLock lockFile(File f) throws Exception {
     return lockFile(
-        f,
-        "Cannot lock file "
-            + f.getAbsolutePath()
-            + ". Make sure no other Whirlpool instance is running in same directory.");
+            f,
+            "Cannot lock file "
+                    + f.getAbsolutePath()
+                    + ". Make sure no other Whirlpool instance is running in same directory.");
   }
 
   public static FileLock lockFile(File f, String errorMsg) throws Exception {
@@ -380,19 +383,19 @@ public class ClientUtils {
 
     LogbackUtils.setLogLevel("com.samourai.whirlpool.client.wallet", mainLevel.toString());
     LogbackUtils.setLogLevel(
-        "com.samourai.whirlpool.client.wallet.orchestrator", mainLevel.toString());
+            "com.samourai.whirlpool.client.wallet.orchestrator", mainLevel.toString());
 
     // skip noisy logs
     LogbackUtils.setLogLevel("org.bitcoinj", org.slf4j.event.Level.ERROR.toString());
     LogbackUtils.setLogLevel(
-        "org.bitcoin", org.slf4j.event.Level.WARN.toString()); // "no wallycore"
+            "org.bitcoin", org.slf4j.event.Level.WARN.toString()); // "no wallycore"
   }
 
   public static long computeTx0MinerFee(
-      int nbPremix,
-      long feeTx0,
-      Collection<? extends UnspentOutput> spendFroms,
-      NetworkParameters params) {
+          int nbPremix,
+          long feeTx0,
+          Collection<? extends UnspentOutput> spendFroms,
+          NetworkParameters params) {
     int nbOutputsNonOpReturn = nbPremix + 2; // outputs + change + fee
 
     int nbP2PKH = 0;
@@ -414,23 +417,23 @@ public class ClientUtils {
       }
     }
     long tx0MinerFee =
-        feeUtil.estimatedFeeSegwit(nbP2PKH, nbP2SH, nbP2WPKH, nbOutputsNonOpReturn, 1, feeTx0);
+            feeUtil.estimatedFeeSegwit(nbP2PKH, nbP2SH, nbP2WPKH, nbOutputsNonOpReturn, 1, feeTx0);
 
     if (log.isTraceEnabled()) {
       log.trace(
-          "tx0 minerFee: "
-              + tx0MinerFee
-              + "sats, totalBytes="
-              + "b for nbPremix="
-              + nbPremix
-              + ", feeTx0="
-              + feeTx0);
+              "tx0 minerFee: "
+                      + tx0MinerFee
+                      + "sats, totalBytes="
+                      + "b for nbPremix="
+                      + nbPremix
+                      + ", feeTx0="
+                      + feeTx0);
     }
     return tx0MinerFee;
   }
 
   public static long computeTx0SpendValue(
-      long premixValue, int nbPremix, long feeValueOrFeeChange, long tx0MinerFee) {
+          long premixValue, int nbPremix, long feeValueOrFeeChange, long tx0MinerFee) {
     long spendValue = (premixValue * nbPremix) + feeValueOrFeeChange + tx0MinerFee;
     return spendValue;
   }
