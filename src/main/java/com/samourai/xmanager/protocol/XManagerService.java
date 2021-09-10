@@ -3,6 +3,8 @@ package com.samourai.xmanager.protocol;
 public enum XManagerService {
   WHIRLPOOL(
       "bc1qxya59zn6fgenfls0pedt0xqkagd33fcfc5s04n", "tb1q6m3urxjc8j2l8fltqj93jarmzn0975nnxuymnx"),
+  WHIRLPOOL_SPARROW(
+      "bc1qctv9kxux6r3reu4uj0glh5gwne2hewy0pfpv79", "tb1qh4w64gvlkpfrhre503ed8unzzstd5vyl9x0am9"),
   SAAS("bc1qsnefhrmd8gs6a4j7fzxfy4ay52j78agl6rsw36", "tb1q6y29zmgw2ajgmqrnpqrf0ejtyrqsh3ehd6wjlk"),
   RICOCHET(
       "bc1qptv26ag03um6dhvcrfjh29wlez64mdufw77z8g", "tb1q6y29zmgw2ajgmqrnpqrf0ejtyrqsh3ehd6wjlk"),
