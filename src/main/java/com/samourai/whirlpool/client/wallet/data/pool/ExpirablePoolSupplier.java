@@ -9,12 +9,11 @@ import com.samourai.whirlpool.client.wallet.data.supplier.ExpirableSupplier;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.samourai.whirlpool.protocol.rest.PoolsResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExpirablePoolSupplier extends ExpirableSupplier<PoolData> implements PoolSupplier {
   private static final Logger log = LoggerFactory.getLogger(ExpirablePoolSupplier.class);
@@ -24,9 +23,8 @@ public class ExpirablePoolSupplier extends ExpirableSupplier<PoolData> implement
   private final Tx0ParamService tx0ParamService;
 
   public ExpirablePoolSupplier(
-          int refreshPoolsDelay, ServerApi serverApi, Tx0ParamService tx0ParamService)
-      throws Exception {
-    super(refreshPoolsDelay, null, log);
+          int refreshPoolsDelay, ServerApi serverApi, Tx0ParamService tx0ParamService) {
+    super(refreshPoolsDelay, log);
     this.serverApi = serverApi;
     this.tx0ParamService = tx0ParamService;
   }
