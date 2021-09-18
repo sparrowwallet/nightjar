@@ -11,16 +11,15 @@ import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxo;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxoChanges;
 import com.samourai.whirlpool.client.wallet.data.pool.PoolSupplier;
 import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigSupplier;
-import com.samourai.whirlpool.client.wallet.data.wallet.WalletSupplierImpl;
+import com.samourai.whirlpool.client.wallet.data.wallet.WalletSupplier;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
+import java.util.*;
 import java8.util.function.Predicate;
 import java8.util.stream.Collectors;
 import java8.util.stream.StreamSupport;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 public class UtxoData {
   private static final Logger log = LoggerFactory.getLogger(UtxoData.class);
@@ -42,15 +41,15 @@ public class UtxoData {
   }
 
   protected void init(
-      WalletSupplierImpl walletSupplier,
-      UtxoConfigSupplier utxoConfigSupplier,
-      PoolSupplier poolSupplier,
-      Tx0ParamService tx0ParamService,
-      Map<String, WhirlpoolUtxo> previousUtxos,
-      int latestBlockHeight) {
+          WalletSupplier walletSupplier,
+          UtxoConfigSupplier utxoConfigSupplier,
+          PoolSupplier poolSupplier,
+          Tx0ParamService tx0ParamService,
+          Map<String, WhirlpoolUtxo> previousUtxos,
+          int latestBlockHeight) {
     // txs
     final Map<WhirlpoolAccount, List<WalletResponse.Tx>> freshTxs =
-        new LinkedHashMap<WhirlpoolAccount, List<WalletResponse.Tx>>();
+            new LinkedHashMap<WhirlpoolAccount, List<WalletResponse.Tx>>();
     for (WhirlpoolAccount account : WhirlpoolAccount.values()) {
       freshTxs.put(account, new LinkedList<WalletResponse.Tx>());
     }
@@ -114,18 +113,18 @@ public class UtxoData {
 
           // auto-assign pool when possible
           String poolId =
-              computeAutoAssignPoolId(
-                  bipWallet.getAccount(), utxo.value, poolSupplier, tx0ParamService);
+                  computeAutoAssignPoolId(
+                          bipWallet.getAccount(), utxo.value, poolSupplier, tx0ParamService);
 
           // add missing
           WhirlpoolUtxo whirlpoolUtxo =
-              new WhirlpoolUtxo(
-                  utxo,
-                  bipWallet.getAccount(),
-                  bipWallet.getAddressType(),
-                  poolId,
-                  utxoConfigSupplier,
-                  latestBlockHeight);
+                  new WhirlpoolUtxo(
+                          utxo,
+                          bipWallet.getAccount(),
+                          bipWallet.getAddressType(),
+                          poolId,
+                          utxoConfigSupplier,
+                          latestBlockHeight);
           if (!isFirstFetch) {
             // set lastActivity when utxo is detected but ignore on first fetch
             whirlpoolUtxo.getUtxoState().setLastActivity();
@@ -136,7 +135,7 @@ public class UtxoData {
           utxoChanges.getUtxosAdded().add(whirlpoolUtxo);
           addUtxo(whirlpoolUtxo);
         } catch (Exception ee) {
-          log.error("error loading new utxo", ee);
+          log.error("error loading new utxo: " + utxo, ee);
         }
       }
     }
@@ -165,10 +164,10 @@ public class UtxoData {
   }
 
   private String computeAutoAssignPoolId(
-      WhirlpoolAccount account,
-      long value,
-      PoolSupplier poolSupplier,
-      Tx0ParamService tx0ParamService) {
+          WhirlpoolAccount account,
+          long value,
+          PoolSupplier poolSupplier,
+          Tx0ParamService tx0ParamService) {
     Collection<Pool> eligiblePools = new LinkedList<Pool>();
 
     // find eligible pools for tx0/premix/postmix
@@ -206,7 +205,7 @@ public class UtxoData {
   }
 
   private Collection<WhirlpoolAccount> findTxAccounts(
-          WalletResponse.Tx tx, WalletSupplierImpl walletSupplier) {
+          WalletResponse.Tx tx, WalletSupplier walletSupplier) {
     Set<WhirlpoolAccount> accounts = new LinkedHashSet<WhirlpoolAccount>();
     // verify inputs
     for (WalletResponse.TxInput input : tx.inputs) {
@@ -248,17 +247,17 @@ public class UtxoData {
 
   public Collection<WhirlpoolUtxo> findUtxos(final WhirlpoolAccount... whirlpoolAccounts) {
     return StreamSupport.stream(utxos.values())
-        .filter(
-            new Predicate<WhirlpoolUtxo>() {
-              @Override
-              public boolean test(WhirlpoolUtxo whirlpoolUtxo) {
-                if (!ArrayUtils.contains(whirlpoolAccounts, whirlpoolUtxo.getAccount())) {
-                  return false;
-                }
-                return true;
-              }
-            })
-        .collect(Collectors.<WhirlpoolUtxo>toList());
+            .filter(
+                    new Predicate<WhirlpoolUtxo>() {
+                      @Override
+                      public boolean test(WhirlpoolUtxo whirlpoolUtxo) {
+                        if (!ArrayUtils.contains(whirlpoolAccounts, whirlpoolUtxo.getAccount())) {
+                          return false;
+                        }
+                        return true;
+                      }
+                    })
+            .collect(Collectors.<WhirlpoolUtxo>toList());
   }
 
   public Collection<WhirlpoolUtxo> findUtxosByAddress(String address) {

@@ -24,7 +24,7 @@ public class TestCahootsWallet extends SimpleCahootsWallet {
         String path = "M/0/1"; // mock path
         ECKey key = ECKey.fromPrivate(BigInteger.valueOf(1234)); // mock key
         byte[] scriptBytes = mockScriptBytes();
-        MyTransactionOutPoint outpoint = new MyTransactionOutPoint(getParams(), Sha256Hash.of(txid.getBytes()), n, BigInteger.valueOf(value), scriptBytes, address);
+        MyTransactionOutPoint outpoint = new MyTransactionOutPoint(getParams(), Sha256Hash.of(txid.getBytes()), n, BigInteger.valueOf(value), scriptBytes, address, 99);
         CahootsUtxo utxo = new CahootsUtxo(outpoint, path, key);
         addUtxo(account, utxo);
     }

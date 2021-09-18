@@ -11,12 +11,18 @@ public class MyTransactionOutPoint extends TransactionOutPoint {
     private byte[] scriptBytes;
     private BigInteger value;
     private String address;
+    private int confirmations;
 
-    public MyTransactionOutPoint(NetworkParameters params, Sha256Hash txHash, int txOutputN, BigInteger value, byte[] scriptBytes, String address) throws ProtocolException {
+    public MyTransactionOutPoint(NetworkParameters params, Sha256Hash txHash, int txOutputN, BigInteger value, byte[] scriptBytes, String address, int confirmations) throws ProtocolException {
         super(params, txOutputN, new Sha256Hash(txHash.getBytes()));
         this.scriptBytes = scriptBytes;
         this.value = value;
         this.address = address;
+        this.confirmations = confirmations;
+    }
+
+    public int getConfirmations() {
+        return confirmations;
     }
 
     public byte[] getScriptBytes() {
@@ -29,6 +35,10 @@ public class MyTransactionOutPoint extends TransactionOutPoint {
 
     public String getAddress() {
         return address;
+    }
+
+    public void setConfirmations(int confirmations) {
+        this.confirmations = confirmations;
     }
 
     public Script computeScript() {
