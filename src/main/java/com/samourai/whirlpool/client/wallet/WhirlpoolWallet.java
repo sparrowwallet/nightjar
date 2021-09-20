@@ -3,8 +3,9 @@ package com.samourai.whirlpool.client.wallet;
 import com.google.common.primitives.Bytes;
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.client.BipWalletAndAddressType;
-import com.samourai.wallet.client.indexHandler.IIndexHandler;
-import com.samourai.wallet.hd.*;
+import com.samourai.wallet.hd.AddressType;
+import com.samourai.wallet.hd.HD_Wallet;
+import com.samourai.wallet.hd.HD_WalletFactoryGeneric;
 import com.samourai.wallet.segwit.bech32.Bech32UtilGeneric;
 import com.samourai.wallet.send.spend.SpendBuilder;
 import com.samourai.whirlpool.client.event.*;
@@ -31,9 +32,10 @@ import com.samourai.whirlpool.client.wallet.orchestrator.AutoTx0Orchestrator;
 import com.samourai.whirlpool.client.wallet.orchestrator.MixOrchestratorImpl;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.samourai.whirlpool.protocol.beans.Utxo;
-import com.samourai.whirlpool.protocol.rest.CheckOutputRequest;
 import com.samourai.whirlpool.protocol.rest.Tx0NotifyRequest;
 import io.reactivex.Observable;
+import java.util.Collection;
+import java.util.Map;
 import java8.util.Optional;
 import java8.util.function.Function;
 import java8.util.stream.Collectors;
@@ -42,12 +44,8 @@ import org.bitcoinj.core.NetworkParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Map;
-
 public class WhirlpoolWallet {
   private final Logger log = LoggerFactory.getLogger(WhirlpoolWallet.class);
-  private static final int CHECK_POSTMIX_INDEX_MAX = 30;
 
   private Bech32UtilGeneric bech32Util;
 
@@ -55,6 +53,7 @@ public class WhirlpoolWallet {
   private WhirlpoolWalletConfig config;
   private Tx0Service tx0Service;
   private WalletAggregateService walletAggregateService;
+  private PostmixIndexService postmixIndexService;
 
   private HD_Wallet bip44w;
   private DataSource dataSource;
@@ -69,18 +68,18 @@ public class WhirlpoolWallet {
   }
 
   public WhirlpoolWallet(WhirlpoolWalletConfig config, byte[] seed, String passphrase)
-      throws Exception {
+          throws Exception {
     this(config, seed, passphrase, null);
   }
 
   public WhirlpoolWallet(
           WhirlpoolWalletConfig config, byte[] seed, String passphrase, String walletIdentifier)
-      throws Exception {
+          throws Exception {
     this(
-        config,
-        HD_WalletFactoryGeneric.getInstance()
-            .getBIP44(seed, passphrase != null ? passphrase : "", config.getNetworkParameters()),
-        walletIdentifier);
+            config,
+            HD_WalletFactoryGeneric.getInstance()
+                    .getBIP44(seed, passphrase != null ? passphrase : "", config.getNetworkParameters()),
+            walletIdentifier);
   }
 
   public WhirlpoolWallet(WhirlpoolWalletConfig config, HD_Wallet bip44w) throws Exception {
@@ -88,11 +87,11 @@ public class WhirlpoolWallet {
   }
 
   public WhirlpoolWallet(WhirlpoolWalletConfig config, HD_Wallet bip44w, String walletIdentifier)
-      throws Exception {
+          throws Exception {
 
     if (walletIdentifier == null) {
       walletIdentifier =
-          computeWalletIdentifier(bip44w.getSeed(), bip44w.getPassphrase(), bip44w.getParams());
+              computeWalletIdentifier(bip44w.getSeed(), bip44w.getPassphrase(), bip44w.getParams());
     }
 
     // debug whirlpoolWalletConfig
@@ -113,7 +112,8 @@ public class WhirlpoolWallet {
     this.config = config;
     this.tx0Service = new Tx0Service(config);
     this.walletAggregateService =
-        new WalletAggregateService(config.getNetworkParameters(), bech32Util, this);
+            new WalletAggregateService(config.getNetworkParameters(), bech32Util, this);
+    this.postmixIndexService = new PostmixIndexService(config, bech32Util);
 
     this.bip44w = bip44w;
     this.dataPersister = null;
@@ -125,9 +125,9 @@ public class WhirlpoolWallet {
   }
 
   protected static String computeWalletIdentifier(
-      byte[] seed, String seedPassphrase, NetworkParameters params) {
+          byte[] seed, String seedPassphrase, NetworkParameters params) {
     return ClientUtils.sha256Hash(
-        Bytes.concat(seed, seedPassphrase.getBytes(), params.getId().getBytes()));
+            Bytes.concat(seed, seedPassphrase.getBytes(), params.getId().getBytes()));
   }
 
   public long computeTx0SpendFromBalanceMin(
@@ -136,46 +136,29 @@ public class WhirlpoolWallet {
     return tx0Param.getSpendFromBalanceMin();
   }
 
-  public Tx0Preview tx0Preview(
-      Pool pool,
-      Collection<WhirlpoolUtxo> whirlpoolUtxos,
-      Tx0Config tx0Config,
-      Tx0FeeTarget tx0FeeTarget,
-      Tx0FeeTarget mixFeeTarget)
-      throws Exception {
-    return tx0Preview(
-        pool, tx0Config, toUnspentOutputs(whirlpoolUtxos), tx0FeeTarget, mixFeeTarget);
+  public Tx0Previews tx0Previews(Collection<WhirlpoolUtxo> whirlpoolUtxos, Tx0Config tx0Config)
+          throws Exception {
+    return tx0Previews(tx0Config, toUnspentOutputs(whirlpoolUtxos));
   }
 
-  public Tx0Preview tx0Preview(
-      Pool pool,
-      Tx0Config tx0Config,
-      Collection<UnspentOutput> whirlpoolUtxos,
-      Tx0FeeTarget tx0FeeTarget,
-      Tx0FeeTarget mixFeeTarget)
-      throws Exception {
-    Tx0Param tx0Param = getTx0ParamService().getTx0Param(pool, tx0FeeTarget, mixFeeTarget);
-    return tx0Service.tx0Preview(whirlpoolUtxos, tx0Config, tx0Param);
+  public Tx0Previews tx0Previews(Tx0Config tx0Config, Collection<UnspentOutput> whirlpoolUtxos)
+          throws Exception {
+    return tx0Service.tx0Previews(whirlpoolUtxos, tx0Config);
   }
 
-  public Tx0 tx0(
-      Collection<WhirlpoolUtxo> whirlpoolUtxos,
-      Pool pool,
-      Tx0FeeTarget tx0FeeTarget,
-      Tx0FeeTarget mixFeeTarget,
-      Tx0Config tx0Config)
-      throws Exception {
+  public Tx0 tx0(Collection<WhirlpoolUtxo> whirlpoolUtxos, Pool pool, Tx0Config tx0Config)
+          throws Exception {
 
     // verify utxos
     for (WhirlpoolUtxo whirlpoolUtxo : whirlpoolUtxos) {
       // check status
       WhirlpoolUtxoStatus utxoStatus = whirlpoolUtxo.getUtxoState().getStatus();
       if (!WhirlpoolUtxoStatus.READY.equals(utxoStatus)
-          && !WhirlpoolUtxoStatus.STOP.equals(utxoStatus)
-          && !WhirlpoolUtxoStatus.TX0_FAILED.equals(utxoStatus)
-          // when aggregating
-          && !WhirlpoolUtxoStatus.MIX_QUEUE.equals(utxoStatus)
-          && !WhirlpoolUtxoStatus.MIX_FAILED.equals(utxoStatus)) {
+              && !WhirlpoolUtxoStatus.STOP.equals(utxoStatus)
+              && !WhirlpoolUtxoStatus.TX0_FAILED.equals(utxoStatus)
+              // when aggregating
+              && !WhirlpoolUtxoStatus.MIX_QUEUE.equals(utxoStatus)
+              && !WhirlpoolUtxoStatus.MIX_FAILED.equals(utxoStatus)) {
         throw new NotifiableException("Cannot Tx0: utxoStatus=" + utxoStatus);
       }
     }
@@ -186,7 +169,7 @@ public class WhirlpoolWallet {
     }
     try {
       // run
-      Tx0 tx0 = tx0(whirlpoolUtxos, pool, tx0Config, tx0FeeTarget, mixFeeTarget);
+      Tx0 tx0 = tx0(toUnspentOutputs(whirlpoolUtxos), tx0Config, pool);
 
       // success
       for (WhirlpoolUtxo whirlpoolUtxo : whirlpoolUtxos) {
@@ -206,45 +189,36 @@ public class WhirlpoolWallet {
     }
   }
 
-  public Tx0 tx0(
-      Collection<WhirlpoolUtxo> spendFroms,
-      Pool pool,
-      Tx0Config tx0Config,
-      Tx0FeeTarget tx0FeeTarget,
-      Tx0FeeTarget mixFeeTarget)
-      throws Exception {
+  public Tx0 tx0(Collection<UnspentOutput> spendFroms, Tx0Config tx0Config, Pool pool)
+          throws Exception {
 
     // check confirmations
-    for (WhirlpoolUtxo spendFrom : spendFroms) {
-      int latestBlockHeight = getChainSupplier().getLatestBlock().height;
-      int confirmations = spendFrom.computeConfirmations(latestBlockHeight);
-      if (confirmations < config.getTx0MinConfirmations()) {
+    for (UnspentOutput spendFrom : spendFroms) {
+      if (spendFrom.confirmations < config.getTx0MinConfirmations()) {
         log.error("Minimum confirmation(s) for tx0: " + config.getTx0MinConfirmations());
         throw new UnconfirmedUtxoException(spendFrom);
       }
     }
 
-    Tx0Param tx0Param = getTx0ParamService().getTx0Param(pool, tx0FeeTarget, mixFeeTarget);
-
     // run tx0
     int initialPremixIndex = getWalletPremix().getIndexHandler().get();
     try {
       Tx0 tx0 =
-          tx0Service.tx0(
-              toUnspentOutputs(spendFroms),
-              getWalletDeposit(),
-              getWalletPremix(),
-              getWalletPostmix(),
-              getWalletBadbank(),
-              tx0Config,
-              tx0Param,
-              getUtxoSupplier());
+              tx0Service.tx0(
+                      spendFroms,
+                      getWalletDeposit(),
+                      getWalletPremix(),
+                      getWalletPostmix(),
+                      getWalletBadbank(),
+                      pool,
+                      tx0Config,
+                      getUtxoSupplier());
 
       log.info(
-          " • Tx0 result: txid="
-              + tx0.getTx().getHashAsString()
-              + ", nbPremixs="
-              + tx0.getPremixOutputs().size());
+              " • Tx0 result: txid="
+                      + tx0.getTx().getHashAsString()
+                      + ", nbPremixs="
+                      + tx0.getPremixOutputs().size());
       if (log.isDebugEnabled()) {
         log.debug(tx0.getTx().toString());
       }
@@ -273,14 +247,14 @@ public class WhirlpoolWallet {
 
   private Collection<UnspentOutput> toUnspentOutputs(Collection<WhirlpoolUtxo> whirlpoolUtxos) {
     return StreamSupport.stream(whirlpoolUtxos)
-        .map(
-            new Function<WhirlpoolUtxo, UnspentOutput>() {
-              @Override
-              public UnspentOutput apply(WhirlpoolUtxo whirlpoolUtxo) {
-                return whirlpoolUtxo.getUtxo();
-              }
-            })
-        .collect(Collectors.<UnspentOutput>toList());
+            .map(
+                    new Function<WhirlpoolUtxo, UnspentOutput>() {
+                      @Override
+                      public UnspentOutput apply(WhirlpoolUtxo whirlpoolUtxo) {
+                        return whirlpoolUtxo.getUtxo();
+                      }
+                    })
+            .collect(Collectors.<UnspentOutput>toList());
   }
 
   private void notifyCoordinatorTx0(final String txid, final String poolId) {
@@ -298,11 +272,17 @@ public class WhirlpoolWallet {
               }
             },
             "notifyCoordinatorTx0")
-        .start();
+            .start();
   }
 
-  public Tx0Config getTx0Config() {
-    Tx0Config tx0Config = new Tx0Config();
+  public Tx0Config getTx0Config(Tx0FeeTarget tx0FeeTarget, Tx0FeeTarget mixFeeTarget) {
+    Tx0Config tx0Config =
+            new Tx0Config(
+                    getTx0ParamService(),
+                    getPoolSupplier(),
+                    tx0FeeTarget,
+                    mixFeeTarget,
+                    WhirlpoolAccount.DEPOSIT);
     return tx0Config;
   }
 
@@ -322,11 +302,11 @@ public class WhirlpoolWallet {
     // start orchestrators
     int loopDelay = config.getRefreshUtxoDelay() * 1000;
     this.mixOrchestrator =
-        new MixOrchestratorImpl(mixingState, loopDelay, config, getPoolSupplier(), this);
+            new MixOrchestratorImpl(mixingState, loopDelay, config, getPoolSupplier(), this);
 
     if (config.isAutoTx0()) {
       this.autoTx0Orchestrator =
-          Optional.of(new AutoTx0Orchestrator(this, config, getTx0ParamService()));
+              Optional.of(new AutoTx0Orchestrator(this, config, getTx0ParamService()));
     } else {
       this.autoTx0Orchestrator = Optional.empty();
     }
@@ -344,22 +324,22 @@ public class WhirlpoolWallet {
     // log wallets
     for (BipWalletAndAddressType bipWallet : getWalletSupplier().getWallets()) {
       String nextReceivePath =
-          bipWallet.getNextAddress(false).getPathFull(bipWallet.getAddressType());
+              bipWallet.getNextAddress(false).getPathFull(bipWallet.getAddressType());
       String nextChangePath =
-          bipWallet.getNextChangeAddress(false).getPathFull(bipWallet.getAddressType());
+              bipWallet.getNextChangeAddress(false).getPathFull(bipWallet.getAddressType());
       String pub =
-          log.isDebugEnabled() ? bipWallet.getPub() : ClientUtils.maskString(bipWallet.getPub());
+              log.isDebugEnabled() ? bipWallet.getPub() : ClientUtils.maskString(bipWallet.getPub());
       log.info(
-          " +WALLET "
-              + bipWallet.getAccount()
-              + ", "
-              + bipWallet.getAddressType()
-              + ", receive="
-              + nextReceivePath
-              + ", change="
-              + nextChangePath
-              + ", "
-              + pub);
+              " +WALLET "
+                      + bipWallet.getAccount()
+                      + ", "
+                      + bipWallet.getAddressType()
+                      + ", receive="
+                      + nextReceivePath
+                      + ", change="
+                      + nextChangePath
+                      + ", "
+                      + pub);
     }
 
     // check postmix index against coordinator
@@ -522,20 +502,20 @@ public class WhirlpoolWallet {
     String logPrefix = " - [MIX] " + (poolId != null ? poolId + " " : "");
     MixDestination destination = whirlpoolUtxo.getUtxoState().getMixProgress().getDestination();
     log.info(
-        logPrefix
-            + "⣿ WHIRLPOOL SUCCESS ⣿ txid: "
-            + receiveUtxo.getHash()
-            + ", receiveAddress="
-            + destination.getAddress()
-            + ", path="
-            + destination.getPath()
-            + ", type="
-            + destination.getType());
+            logPrefix
+                    + "⣿ WHIRLPOOL SUCCESS ⣿ txid: "
+                    + receiveUtxo.getHash()
+                    + ", receiveAddress="
+                    + destination.getAddress()
+                    + ", path="
+                    + destination.getPath()
+                    + ", type="
+                    + destination.getType());
 
     // forward utxoConfig
     int newMixsDone = whirlpoolUtxo.getMixsDone() + 1;
     getUtxoConfigSupplier()
-        .setUtxo(receiveUtxo.getHash(), (int) receiveUtxo.getIndex(), newMixsDone);
+            .setUtxo(receiveUtxo.getHash(), (int) receiveUtxo.getIndex(), newMixsDone);
 
     // persist
     try {
@@ -570,20 +550,27 @@ public class WhirlpoolWallet {
     } else {
       MixDestination destination = whirlpoolUtxo.getUtxoState().getMixProgress().getDestination();
       String destinationStr =
-          (destination != null
-              ? ", receiveAddress="
-                  + destination.getAddress()
-                  + ", path="
-                  + destination.getPath()
-                  + ", type="
-                  + destination.getType()
-              : "");
+              (destination != null
+                      ? ", receiveAddress="
+                      + destination.getAddress()
+                      + ", path="
+                      + destination.getPath()
+                      + ", type="
+                      + destination.getType()
+                      : "");
       log.error(logPrefix + "⣿ WHIRLPOOL FAILED ⣿ " + message + destinationStr);
     }
 
     // notify
     WhirlpoolEventService.getInstance()
-        .post(new MixFailEvent(this, mixParams, failReason, notifiableError));
+            .post(new MixFailEvent(this, mixParams, failReason, notifiableError));
+
+    try {
+      checkPostmixIndex();
+    } catch (Exception e) {
+      log.error(e.getMessage());
+      stop();
+    }
 
     switch (failReason) {
       case PROTOCOL_MISMATCH:
@@ -645,13 +632,13 @@ public class WhirlpoolWallet {
   /** Refresh utxos after utxosDelay (in a new thread). */
   public Observable<Optional<Void>> refreshUtxosDelay() {
     return ClientUtils.sleepUtxosDelay(
-        config.getNetworkParameters(),
-        new Runnable() {
-          @Override
-          public void run() {
-            refreshUtxos();
-          }
-        });
+            config.getNetworkParameters(),
+            new Runnable() {
+              @Override
+              public void run() {
+                refreshUtxos();
+              }
+            });
   }
 
   /** Refresh utxos now. */
@@ -663,63 +650,8 @@ public class WhirlpoolWallet {
     }
   }
 
-  private void checkPostmixIndex() throws Exception {
-    IIndexHandler postmixIndexHandler = getWalletPostmix().getIndexHandler();
-    int initialPostmixIndex =
-        ClientUtils.computeNextReceiveAddressIndex(postmixIndexHandler, config.isMobile());
-    if (log.isDebugEnabled()) {
-      log.debug("checking postmixIndex: " + initialPostmixIndex);
-    }
-    int postmixIndex = initialPostmixIndex;
-    while (true) {
-      try {
-        // check next output
-        checkPostmixIndex(postmixIndex).blockingSingle().get();
-
-        // success!
-        if (postmixIndex != initialPostmixIndex) {
-          if (log.isDebugEnabled()) {
-            log.debug("fixing postmixIndex: " + initialPostmixIndex + " -> " + postmixIndex);
-          }
-          postmixIndexHandler.confirmUnconfirmed(postmixIndex);
-        } else {
-          postmixIndexHandler.cancelUnconfirmed(initialPostmixIndex);
-        }
-        return;
-      } catch (RuntimeException runtimeException) { // blockingGet wraps errors in RuntimeException
-        Throwable e = runtimeException.getCause();
-        String restErrorMessage = ClientUtils.parseRestErrorMessage(e);
-        if (restErrorMessage != null && "Output already registered".equals(restErrorMessage)) {
-          log.warn("postmixIndex already used: " + postmixIndex);
-
-          // try second next index
-          ClientUtils.computeNextReceiveAddressIndex(postmixIndexHandler, config.isMobile());
-          postmixIndex =
-              ClientUtils.computeNextReceiveAddressIndex(postmixIndexHandler, config.isMobile());
-
-          // avoid flooding
-          try {
-            Thread.sleep(500);
-          } catch (InterruptedException ee) {
-          }
-        } else {
-          throw new Exception(
-              "checkPostmixIndex failed when checking postmixIndex=" + postmixIndex, e);
-        }
-        if ((postmixIndex - initialPostmixIndex) > CHECK_POSTMIX_INDEX_MAX) {
-          throw new NotifiableException(
-              "PostmixIndex error - please resync your wallet or contact support");
-        }
-      }
-    }
-  }
-
-  private Observable<Optional<String>> checkPostmixIndex(int postmixIndex) throws Exception {
-    HD_Address hdAddress = getWalletPostmix().getAddressAt(Chain.RECEIVE.getIndex(), postmixIndex);
-    String outputAddress = bech32Util.toBech32(hdAddress, config.getNetworkParameters());
-    String signature = hdAddress.getECKey().signMessage(outputAddress);
-    CheckOutputRequest checkOutputRequest = new CheckOutputRequest(outputAddress, signature);
-    return config.getServerApi().checkOutput(checkOutputRequest);
+  public void checkPostmixIndex() throws Exception {
+    postmixIndexService.checkPostmixIndex(getWalletPostmix());
   }
 
   public void aggregate() throws Exception {
@@ -756,7 +688,7 @@ public class WhirlpoolWallet {
 
   public String getDepositAddress(boolean increment) {
     return bech32Util.toBech32(
-        getWalletDeposit().getNextAddress(increment), config.getNetworkParameters());
+            getWalletDeposit().getNextAddress(increment), config.getNetworkParameters());
   }
 
   public void notifyError(String message) {

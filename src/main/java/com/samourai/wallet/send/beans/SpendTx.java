@@ -31,6 +31,14 @@ public class SpendTx {
     private Transaction tx;
 
     public SpendTx(AddressType changeType, long amount, long fee, long change, SpendSelection spendSelection, Map<String, Long> receivers, boolean rbfOptIn, UtxoKeyProvider keyProvider, NetworkParameters params) throws SpendException {
+        // consistency check
+        long totalValueSelected = spendSelection.getTotalValueSelected();
+        if((amount+fee+change) > totalValueSelected){
+            // should never happen
+            log.error("inconsistency detected! amount="+amount+", fee="+fee+", change="+change+", totalValueSelected="+totalValueSelected);
+            throw new SpendException(SpendError.INSUFFICIENT_FUNDS);
+        }
+
         this.changeType = changeType;
         this.amount = amount;
         this.fee = fee;

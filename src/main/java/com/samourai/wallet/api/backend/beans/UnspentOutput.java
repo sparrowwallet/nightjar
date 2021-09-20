@@ -38,6 +38,21 @@ public class UnspentOutput {
         this.xpub = copy.xpub;
     }
 
+    public UnspentOutput(MyTransactionOutPoint outPoint, String pubkey, String path, String xpub) {
+        this.tx_hash = outPoint.getTxHash().toString();
+        this.tx_output_n = outPoint.getTxOutputN();
+        this.tx_version = -1; // ignored
+        this.tx_locktime = -1; // ignored
+        this.value = outPoint.getValue().getValue();
+        this.script = outPoint.getScriptBytes() != null ? Hex.toHexString(outPoint.getScriptBytes()) : null;
+        this.addr = outPoint.getAddress();
+        this.pubkey = pubkey;
+        this.confirmations = outPoint.getConfirmations();
+        this.xpub = new Xpub();
+        this.xpub.path = path;
+        this.xpub.m = xpub;
+    }
+
     public int computePathChainIndex() {
       return Integer.parseInt(xpub.path.split(PATH_SEPARATOR)[1]);
     }
@@ -60,7 +75,7 @@ public class UnspentOutput {
     public MyTransactionOutPoint computeOutpoint(NetworkParameters params) {
         Sha256Hash sha256Hash = Sha256Hash.wrap(Hex.decode(tx_hash));
         // use MyTransactionOutPoint to forward scriptBytes + address
-        return new MyTransactionOutPoint(params, sha256Hash, tx_output_n, BigInteger.valueOf(value), getScriptBytes(), addr);
+        return new MyTransactionOutPoint(params, sha256Hash, tx_output_n, BigInteger.valueOf(value), getScriptBytes(), addr, confirmations);
     }
 
     public TransactionInput computeSpendInput(NetworkParameters params) {

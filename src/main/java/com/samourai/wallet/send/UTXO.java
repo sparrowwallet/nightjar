@@ -1,9 +1,8 @@
 package com.samourai.wallet.send;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
+import com.samourai.wallet.api.backend.beans.UnspentOutput;
+
+import java.util.*;
 
 //import org.apache.commons.lang3.tuple.Pair;
 
@@ -20,6 +19,14 @@ public class UTXO {
     public UTXO(List<MyTransactionOutPoint> outpoints, String path) {
         this.outpoints = outpoints;
         this.path = path;
+    }
+
+    public Collection<UnspentOutput> toUnspentOutputs(String xpub) {
+        List<UnspentOutput> unspentOutputs = new LinkedList<>();
+        for (MyTransactionOutPoint outPoint : outpoints) {
+            unspentOutputs.add(new UnspentOutput(outPoint, null, path, xpub));
+        }
+        return unspentOutputs;
     }
 
     public List<MyTransactionOutPoint> getOutpoints() {

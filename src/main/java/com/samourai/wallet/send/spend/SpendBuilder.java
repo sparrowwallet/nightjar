@@ -36,9 +36,6 @@ public class SpendBuilder {
 
     // forcedChangeType may be null
     public SpendTx preview(WhirlpoolAccount account, String address, long amount, boolean boltzmann, boolean rbfOptIn, BigInteger feePerKb, AddressType forcedChangeType, List<MyTransactionOutPoint> preselectedInputs) throws Exception {
-        if (account == WhirlpoolAccount.POSTMIX) {
-            forcedChangeType = AddressType.SEGWIT_NATIVE;
-        }
         AddressType addressType = computeAddressType(forcedChangeType, address, params);
 
         // if possible, get UTXO by input 'type': p2pkh, p2sh-p2wpkh or p2wpkh, else get all UTXO

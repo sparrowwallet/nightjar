@@ -1,18 +1,19 @@
 package com.samourai.whirlpool.protocol.rest;
 
-public class Tx0DataResponse {
+/** for whirlpool-protocol <= 0.23.5 */
+public class Tx0DataResponseV1 {
   public String feePaymentCode;
   public long feeValue;
   public long feeChange;
   public int feeDiscountPercent;
   public String message;
-  public String feePayload64;
+  public String feePayload64; // WhirlpoolProtocol.encodeBytes(sCodePayload) or null when no SCODE
   public String feeAddress;
   public Integer feeIndice;
 
-  public Tx0DataResponse() {}
+  public Tx0DataResponseV1() {}
 
-  public Tx0DataResponse(
+  public Tx0DataResponseV1(
       String feePaymentCode,
       long feeValue,
       long feeChange,

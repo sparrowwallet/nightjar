@@ -7,9 +7,7 @@ import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class Tx0ParamService {
   private Logger log = LoggerFactory.getLogger(Tx0ParamService.class);
