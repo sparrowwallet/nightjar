@@ -28,8 +28,12 @@ import java.security.KeyFactory;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java8.util.Optional;
+import java8.util.function.Function;
+import java8.util.stream.Collectors;
+import java8.util.stream.StreamSupport;
 import org.bitcoinj.core.*;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.slf4j.Logger;
@@ -118,6 +122,9 @@ public class ClientUtils {
   }
 
   public static String getHttpResponseBody(Throwable e) {
+    if (!(e instanceof HttpException) && e.getCause() != null) {
+      e = e.getCause(); // blockingGet from CLI wraps errors in RuntimeException
+    }
     if (e instanceof HttpException) {
       return ((HttpException) e).getResponseBody();
     }
@@ -438,14 +445,6 @@ public class ClientUtils {
     return spendValue;
   }
 
-  public static int countPrevTxs(Collection<UnspentOutput> spendFroms) {
-    Map<String, Boolean> mapByPrevTx = new LinkedHashMap<String, Boolean>();
-    for (UnspentOutput spendFrom : spendFroms) {
-      mapByPrevTx.put(spendFrom.tx_hash, true);
-    }
-    return mapByPrevTx.size();
-  }
-
   public static void createFile(File f) throws NotifiableException {
     if (!f.exists()) {
       if (log.isDebugEnabled()) {
@@ -473,5 +472,32 @@ public class ClientUtils {
       }
     }
     return list;
+  }
+
+  public static Collection<Integer> getOutputIndexs(Collection<TransactionOutput> outputs) {
+    return StreamSupport.stream(outputs)
+        .map(
+            new Function<TransactionOutput, Integer>() {
+              @Override
+              public Integer apply(TransactionOutput output) {
+                return output.getIndex();
+              }
+            })
+        .collect(Collectors.<Integer>toList());
+  }
+
+  public static <B> Collection<B> intersect(Collection<B> a1, Collection<B> a2) {
+    Set<B> s1 = new HashSet<B>(a1);
+    Set<B> s2 = new HashSet<B>(a2);
+    s1.retainAll(s2);
+    return s1;
+  }
+
+  public static String dateToString(long timestamp) {
+    return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(timestamp);
+  }
+
+  public static long bytesToMB(long bytes) {
+    return Math.round(bytes / (1024L * 1024L));
   }
 }
