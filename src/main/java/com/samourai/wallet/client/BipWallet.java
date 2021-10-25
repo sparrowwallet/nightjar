@@ -28,7 +28,7 @@ public class BipWallet {
   }
 
   public String getPub(AddressType addressType) {
-    HD_Account hdAccount = bipWallet.getAccountAt(account.getAccountIndex());
+    HD_Account hdAccount = bipWallet.getAccount(account.getAccountIndex());
     switch (addressType) {
       case LEGACY:
         return hdAccount.xpubstr();

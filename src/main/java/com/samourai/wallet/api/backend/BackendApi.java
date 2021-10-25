@@ -216,7 +216,8 @@ public class BackendApi {
 
     // address reuse
     if (pushTxResponse.error != null && PushTxResponse.PushTxError.CODE_VIOLATION_STRICT_MODE_VOUTS.equals(pushTxResponse.error.code)) {
-      throw new PushTxAddressReuseException();
+      Collection<Integer> adressReuseOutputIndexs = (Collection<Integer>)pushTxResponse.error.message;
+      throw new PushTxAddressReuseException(adressReuseOutputIndexs);
     }
 
     // other error

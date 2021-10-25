@@ -10,9 +10,10 @@ import org.bitcoinj.crypto.*;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class HD_Wallet {
     private byte[] mSeed = null;
@@ -21,7 +22,10 @@ public class HD_Wallet {
 
     protected DeterministicKey mRoot = null; // null when created from xpub
 
-    protected ArrayList<HD_Account> mAccounts = null;
+    protected Map<Integer,HD_Account> mAccounts = null;
+
+    // contains xpub of #account0, or all xpubs from constructor
+    protected String[] xpubs = null;
 
     protected NetworkParameters mParams = null;
 
@@ -30,49 +34,45 @@ public class HD_Wallet {
     /*
     create from seed+passphrase
      */
-    public HD_Wallet(int purpose, MnemonicCode mc, NetworkParameters mParams, byte[] mSeed, String strPassphrase, int nbAccounts) throws MnemonicException.MnemonicLengthException {
-        this(purpose, mc.toMnemonic(mSeed), mParams, mSeed, strPassphrase, nbAccounts);
+    public HD_Wallet(int purpose, MnemonicCode mc, NetworkParameters mParams, byte[] mSeed, String strPassphrase) throws MnemonicException.MnemonicLengthException {
+        this(purpose, mc.toMnemonic(mSeed), mParams, mSeed, strPassphrase);
     }
 
-    public HD_Wallet(int purpose, List<String> wordList, NetworkParameters mParams, byte[] mSeed, String strPassphrase, int nbAccounts) {
-        this(mSeed, strPassphrase, wordList, mParams);
+    public HD_Wallet(int purpose, List<String> mWordList, NetworkParameters mParams, byte[] mSeed, String strPassphrase) {
+        this.mSeed = mSeed;
+        this.strPassphrase = strPassphrase;
+        this.mWordList = mWordList;
+        this.mParams = mParams;
 
         // compute rootKey for accounts
         this.mRoot = computeRootKey(purpose, mWordList, strPassphrase, mParams);
 
-        // create accounts
-        mAccounts = new ArrayList<HD_Account>();
-        for(int i = 0; i < nbAccounts; i++) {
-            String acctName = String.format("account %02d", i);
-            mAccounts.add(new HD_Account(mParams, mRoot, acctName, i));
-        }
+        // initialize mAccounts with account #0
+        mAccounts = new LinkedHashMap<>();
+        HD_Account hdAccount = getAccount(0);
+
+        // xpubs will only contain account #0 (even if mAccounts contains more accounts)
+        xpubs = new String[]{hdAccount.xpubstr()};
     }
 
-    protected HD_Wallet(int purpose, HD_Wallet inputWallet, int nbAccounts) {
-        this(purpose, inputWallet.mWordList, inputWallet.mParams, inputWallet.mSeed, inputWallet.strPassphrase, nbAccounts);
-    }
     public HD_Wallet(int purpose, HD_Wallet inputWallet) {
-        this(purpose, inputWallet, 1);
+        this(purpose, inputWallet.mWordList, inputWallet.mParams, inputWallet.mSeed, inputWallet.strPassphrase);
     }
 
     /*
     create from account xpub key(s)
      */
     public HD_Wallet(NetworkParameters params, String[] xpub) throws AddressFormatException {
-
         mParams = params;
-        mAccounts = new ArrayList<HD_Account>();
+
+        // initialize mAccounts and xpubs
+        mAccounts = new LinkedHashMap<>();
+        xpubs = new String[xpub.length];
         for(int i = 0; i < xpub.length; i++) {
-            mAccounts.add(new HD_Account(mParams, xpub[i], "", i));
+            HD_Account account = new HD_Account(mParams, xpub[i], i);
+            mAccounts.put(i, account);
+            xpubs[i] = account.xpubstr();
         }
-
-    }
-
-    protected HD_Wallet(byte[] mSeed, String strPassphrase, List<String> mWordList, NetworkParameters mParams) {
-        this.mSeed = mSeed;
-        this.strPassphrase = strPassphrase;
-        this.mWordList = mWordList;
-        this.mParams = mParams;
     }
 
     private static DeterministicKey computeRootKey(int purpose, List<String> mWordList, String strPassphrase, NetworkParameters params) {
@@ -100,36 +100,21 @@ public class HD_Wallet {
         return strPassphrase;
     }
 
-    public List<HD_Account> getAccounts() {
-        return mAccounts;
-    }
-
     public NetworkParameters getParams() {
         return mParams;
     }
 
-    public HD_Account getAccount(int accountId) {
-        return mAccounts.get(accountId);
-    }
-
-    public HD_Account getAccountAt(int accountIdx) {
-        return new HD_Account(mParams, mRoot, "", accountIdx);
-    }
-
-    public void addAccount() {
-        String strName = String.format("Account %d", mAccounts.size());
-        mAccounts.add(new HD_Account(mParams, mRoot, strName, mAccounts.size()));
+    public HD_Account getAccount(int accountIdx) {
+        HD_Account hdAccount = mAccounts.get(accountIdx);
+        if (hdAccount == null) {
+            hdAccount = new HD_Account(mParams, mRoot, accountIdx);
+            mAccounts.put(accountIdx, hdAccount);
+        }
+        return hdAccount;
     }
 
     public String[] getXPUBs() {
-
-        String[] ret = new String[mAccounts.size()];
-
-        for(int i = 0; i < mAccounts.size(); i++) {
-            ret[i] = mAccounts.get(i).xpubstr();
-        }
-
-        return ret;
+        return xpubs;
     }
 
     public byte[] getFingerprint() {
@@ -151,7 +136,7 @@ public class HD_Wallet {
     }
 
     public HD_Address getAddressAt(int account, int chain, int idx) {
-        return getAccountAt(account).getChain(chain).getAddressAt(idx);
+        return getAccount(account).getChain(chain).getAddressAt(idx);
     }
 
     public SegwitAddress getSegwitAddressAt(int account, int chain, int idx) {
@@ -162,5 +147,12 @@ public class HD_Wallet {
 
     public HD_Address getAddressAt(int account, UnspentOutput utxo) {
         return getAddressAt(account, utxo.computePathChainIndex(), utxo.computePathAddressIndex());
+    }
+
+    public void wipe() {
+        for(HD_Account hdAccount : mAccounts.values())	{
+            hdAccount.getReceive().setAddrIdx(0);
+            hdAccount.getChange().setAddrIdx(0);
+        }
     }
 }

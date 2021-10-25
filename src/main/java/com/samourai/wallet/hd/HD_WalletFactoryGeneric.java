@@ -9,6 +9,8 @@ import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.crypto.MnemonicException;
 
+import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,8 +33,34 @@ public class HD_WalletFactoryGeneric {
     this.mc = mc;
   }
 
-  public HD_Wallet restoreWallet(String data, String passphrase, int nbAccounts, NetworkParameters params)
-      throws AddressFormatException, DecoderException,
+  public HD_Wallet newWallet(String passphrase, NetworkParameters params) throws Exception {
+    return newWallet(12, passphrase, params);
+  }
+
+  public HD_Wallet newWallet(int nbWords, String passphrase, NetworkParameters params) throws IOException, MnemonicException.MnemonicLengthException   {
+
+    if((nbWords % 3 != 0) || (nbWords < 12 || nbWords > 24)) {
+      nbWords = 12;
+    }
+
+    // len == 16 (12 words), len == 24 (18 words), len == 32 (24 words)
+    int len = (nbWords / 3) * 4;
+
+    if(passphrase == null) {
+      passphrase = "";
+    }
+
+    SecureRandom random = new SecureRandom();
+    byte seed[] = new byte[len];
+    random.nextBytes(seed);
+
+    HD_Wallet hdw = new HD_Wallet(44, mc, params, seed, passphrase);
+
+    return hdw;
+  }
+
+  public HD_Wallet restoreWallet(String data, String passphrase, NetworkParameters params)
+          throws AddressFormatException, DecoderException,
           MnemonicException.MnemonicLengthException, MnemonicException.MnemonicWordException,
           MnemonicException.MnemonicChecksumException {
 
@@ -47,10 +75,10 @@ public class HD_WalletFactoryGeneric {
       hdw = new HD_Wallet(params, xpub);
     } else if (data.matches(FormatsUtilGeneric.HEX) && data.length() % 4 == 0) {
       byte[] seed = Hex.decodeHex(data.toCharArray());
-      hdw = new HD_Wallet(44, mc, params, seed, passphrase, nbAccounts);
+      hdw = new HD_Wallet(44, mc, params, seed, passphrase);
     } else {
       byte[] seed = computeSeedFromWords(data);
-      hdw = new HD_Wallet(44, mc, params, seed, passphrase, nbAccounts);
+      hdw = new HD_Wallet(44, mc, params, seed, passphrase);
     }
     return hdw;
   }
@@ -71,12 +99,12 @@ public class HD_WalletFactoryGeneric {
   }
 
   public HD_Wallet getHD(int purpose, byte[] seed, String passphrase, NetworkParameters params) throws MnemonicException.MnemonicLengthException {
-    HD_Wallet hdw = new HD_Wallet(purpose, mc, params, seed, passphrase, 1);
+    HD_Wallet hdw = new HD_Wallet(purpose, mc, params, seed, passphrase);
     return hdw;
   }
 
   public BIP47Wallet getBIP47(String seed, String passphrase, NetworkParameters params) throws MnemonicException.MnemonicLengthException {
-    BIP47Wallet hdw47 = new BIP47Wallet(47, mc, params, org.bouncycastle.util.encoders.Hex.decode(seed), passphrase, 1);
+    BIP47Wallet hdw47 = new BIP47Wallet(47, mc, params, org.bouncycastle.util.encoders.Hex.decode(seed), passphrase);
     return hdw47;
   }
 

@@ -375,7 +375,7 @@ public class Stonewallx2Service extends AbstractCahootsService<STONEWALLx2> {
         //
 
         HD_Wallet bip84Wallet = cahootsWallet.getBip84Wallet();
-        String zpub = bip84Wallet.getAccountAt(stonewall1.getAccount()).zpubstr();
+        String zpub = bip84Wallet.getAccount(stonewall1.getAccount()).zpubstr();
         HashMap<MyTransactionOutPoint, Triple<byte[], byte[], String>> inputsB = new HashMap<MyTransactionOutPoint, Triple<byte[], byte[], String>>();
 
         for (CahootsUtxo utxo : selectedUTXO) {

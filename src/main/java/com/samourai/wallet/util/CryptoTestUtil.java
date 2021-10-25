@@ -38,7 +38,7 @@ public class CryptoTestUtil {
 
     public BIP47Wallet generateBip47Wallet(NetworkParameters networkParameters) throws Exception {
         HD_Wallet bip44Wallet = generateWallet(44, networkParameters);
-        BIP47Wallet bip47Wallet = new BIP47Wallet(47, bip44Wallet, 1);
+        BIP47Wallet bip47Wallet = new BIP47Wallet(bip44Wallet);
         return bip47Wallet;
     }
 

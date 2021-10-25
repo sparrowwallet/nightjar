@@ -25,7 +25,7 @@ public class MemoryIndexHandler extends AbstractIndexHandler {
   }
 
   @Override
-  public synchronized void set(int value) {
+  protected synchronized void set(int value) {
     index = value;
   }
 }

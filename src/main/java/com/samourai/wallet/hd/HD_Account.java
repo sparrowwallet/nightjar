@@ -14,7 +14,6 @@ import org.json.JSONObject;
 public class HD_Account {
 
     protected DeterministicKey aKey = null;
-    private String strLabel = null;
     protected int mAID; // accountIndex
 
     private HD_Chain mReceive = null;
@@ -28,10 +27,9 @@ public class HD_Account {
 
     protected HD_Account() { ; }
 
-    public HD_Account(NetworkParameters params, DeterministicKey mKey, String label, int child) {
+    public HD_Account(NetworkParameters params, DeterministicKey mKey, int child) {
 
         mParams = params;
-        strLabel = label;
         mAID = child;
 
         // L0PRV & STDVx: private derivation.
@@ -48,10 +46,9 @@ public class HD_Account {
 
     }
 
-    public HD_Account(NetworkParameters params, String xpub, String label, int child) throws AddressFormatException {
+    public HD_Account(NetworkParameters params, String xpub, int child) throws AddressFormatException {
 
         mParams = params;
-        strLabel = label;
         mAID = child;
 
         // assign master key to account key
@@ -80,14 +77,6 @@ public class HD_Account {
 
         return strZPUB;
 
-    }
-
-    public String getLabel() {
-        return strLabel;
-    }
-
-    public void setLabel(String label) {
-        strLabel = label;
     }
 
     public int getId() {

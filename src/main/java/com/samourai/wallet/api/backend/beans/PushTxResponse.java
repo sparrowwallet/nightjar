@@ -16,6 +16,14 @@ public class PushTxResponse {
 
     public Object message;
     public String code;
+
+    @Override
+    public String toString() {
+      return "PushTxError{" +
+              "message=" + message +
+              ", code='" + code + '\'' +
+              '}';
+    }
   }
 
   @Override

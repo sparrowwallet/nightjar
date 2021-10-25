@@ -12,8 +12,6 @@ import org.bitcoinj.crypto.MnemonicException;
  */
 public class BIP47Wallet extends HD_Wallet {
 
-    private BIP47Account mAccount = null;
-
     /**
      * Constructor for wallet.
      *
@@ -22,15 +20,10 @@ public class BIP47Wallet extends HD_Wallet {
      * @param NetworkParameters params
      * @param byte[] seed seed for this wallet
      * @param String passphrase optional BIP39 passphrase
-     * @param int nbAccounts number of accounts to create
      *
      */
-    public BIP47Wallet(int purpose, MnemonicCode mc, NetworkParameters params, byte[] seed, String passphrase, int nbAccounts) throws MnemonicException.MnemonicLengthException {
-
-        super(purpose, mc, params, seed, passphrase, nbAccounts);
-
-        mAccount = new BIP47Account(params, mRoot, 0);
-
+    public BIP47Wallet(int purpose, MnemonicCode mc, NetworkParameters params, byte[] seed, String passphrase) throws MnemonicException.MnemonicLengthException {
+        super(purpose, mc, params, seed, passphrase);
     }
 
     /**
@@ -38,23 +31,7 @@ public class BIP47Wallet extends HD_Wallet {
      * @param hdWallet
      */
     public BIP47Wallet(HD_Wallet hdWallet) {
-        this(47, hdWallet, 1);
-    }
-
-    /**
-     * Constructor for wallet.
-     *
-     * @param int purpose
-     * @param HD_Wallet hdWallet to copy from
-     * @param int nbAccounts
-     *
-     */
-    public BIP47Wallet(int purpose, HD_Wallet hdWallet, int nbAccounts) {
-
-        super(purpose, hdWallet, nbAccounts);
-
-        mAccount = new BIP47Account(mParams, mRoot, 0);
-
+        super(47, hdWallet);
     }
 
     /**
@@ -65,8 +42,9 @@ public class BIP47Wallet extends HD_Wallet {
      * @return Account
      *
      */
+    @Override
     public BIP47Account getAccount(int accountId) {
-        return mAccount;
+        return new BIP47Account(mParams, mRoot, 0);
     }
 
 }

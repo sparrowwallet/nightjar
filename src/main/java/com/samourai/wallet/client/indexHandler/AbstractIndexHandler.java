@@ -38,7 +38,7 @@ public abstract class AbstractIndexHandler implements IIndexHandler {
   @Override
   public synchronized void confirmUnconfirmed(final int confirmed) {
     if (confirmed >= get()) {
-      set(confirmed + 1);
+      set(confirmed + 1, false);
     }
 
     Iterator<Integer> it = unconfirmedIndexs.iterator();
@@ -63,4 +63,14 @@ public abstract class AbstractIndexHandler implements IIndexHandler {
   public synchronized void cancelUnconfirmed(int unconfirmed) {
     unconfirmedIndexs.remove(unconfirmed);
   }
+
+  @Override
+  public void set(int value, boolean allowDecrement) {
+    if (!allowDecrement && value <= get()) {
+      return; // deny decrement
+    }
+    set(value);
+  }
+
+  protected abstract void set(int value);
 }

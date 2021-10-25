@@ -29,7 +29,7 @@ public class BIP47Account extends HD_Account {
      *
      */
     public BIP47Account(NetworkParameters params, DeterministicKey wKey, int child) {
-        super(params, wKey, "", child);
+        super(params, wKey, child);
         strPaymentCode = createPaymentCodeFromAccountKey();
     }
 
