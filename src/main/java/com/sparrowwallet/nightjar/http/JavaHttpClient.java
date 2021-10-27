@@ -12,6 +12,7 @@ import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -19,6 +20,7 @@ import org.springframework.http.MediaType;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class JavaHttpClient extends JacksonHttpClient {
@@ -61,6 +63,10 @@ public class JavaHttpClient extends JacksonHttpClient {
         try {
             if(httpClient.isRunning()) {
                 httpClient.stop();
+                Executor executor = httpClient.getExecutor();
+                if(executor instanceof QueuedThreadPool queuedThreadPool) {
+                    queuedThreadPool.stop();
+                }
             }
         } catch(Exception e) {
             log.error("Error stopping client", e);
@@ -69,14 +75,14 @@ public class JavaHttpClient extends JacksonHttpClient {
 
     @Override
     protected String requestJsonGet(String urlStr, Map<String, String> headers, boolean async) throws Exception {
-        log.info("GET " + urlStr);
+        log.debug("GET " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.GET, headers);
         return requestJson(req);
     }
 
     @Override
     protected String requestJsonPost(String urlStr, Map<String, String> headers, String jsonBody) throws Exception {
-        log.info("POST " + urlStr);
+        log.debug("POST " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.POST, headers);
         req.content(new StringContentProvider(MediaType.APPLICATION_JSON_VALUE, jsonBody, StandardCharsets.UTF_8));
         return requestJson(req);
@@ -84,7 +90,7 @@ public class JavaHttpClient extends JacksonHttpClient {
 
     @Override
     protected String requestJsonPostUrlEncoded(String urlStr, Map<String, String> headers, Map<String, String> body) throws Exception {
-        log.info("POST " + urlStr);
+        log.debug("POST " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.POST, headers);
         req.content(new FormContentProvider(computeBodyFields(body)));
         return requestJson(req);
