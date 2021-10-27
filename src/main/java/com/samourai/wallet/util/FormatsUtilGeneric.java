@@ -238,8 +238,8 @@ public class FormatsUtilGeneric {
 		boolean ret = false;
 
 		try	{
-			Pair<String, byte[]> pair0 = Bech32.bech32Decode(address);
-			if(pair0.getLeft() == null || pair0.getRight() == null)	{
+			Triple<String, byte[], Integer> triple0 = Bech32.bech32Decode(address);
+			if(triple0.getLeft() == null || triple0.getMiddle() == null || triple0.getRight() == null)	{
 				ret = false;
 			}
 			else	{

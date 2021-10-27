@@ -7,7 +7,7 @@ public interface IIndexHandler {
 
   int get();
 
-  void set(int value);
+  void set(int value, boolean allowDecrement);
 
   int getAndIncrementUnconfirmed();
 

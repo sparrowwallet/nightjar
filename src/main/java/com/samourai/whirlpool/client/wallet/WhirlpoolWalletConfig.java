@@ -6,6 +6,7 @@ import com.samourai.tor.client.TorClientService;
 import com.samourai.wallet.bip47.rpc.java.SecretPointFactoryJava;
 import com.samourai.wallet.bip47.rpc.secretPoint.ISecretPointFactory;
 import com.samourai.wallet.util.FormatsUtilGeneric;
+import com.samourai.whirlpool.client.exception.NotifiableException;
 import com.samourai.whirlpool.client.tx0.ITx0ParamServiceConfig;
 import com.samourai.whirlpool.client.utils.ClientUtils;
 import com.samourai.whirlpool.client.wallet.beans.IndexRange;
@@ -17,6 +18,7 @@ import com.samourai.whirlpool.client.whirlpool.ServerApi;
 import com.samourai.whirlpool.client.whirlpool.WhirlpoolClientConfig;
 import com.samourai.whirlpool.protocol.WhirlpoolProtocol;
 import org.apache.commons.lang3.StringUtils;
+import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +44,8 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
   private boolean autoMix;
   private String scode;
   private int tx0MaxOutputs;
-  private int tx0FakeOutputRandomFactor;
-  private int tx0FakeOutputMinValue;
+  private int tx0MaxRetry;
+  private boolean tx0StrictMode;
   private Map<String, Long> overspend;
 
   private int tx0MinConfirmations;
@@ -55,7 +57,7 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
   private int feeFallback;
 
   private boolean resyncOnFirstRun;
-  private boolean strictMode;
+  private boolean postmixIndexAutoFix;
   private int persistDelaySeconds;
   private String partner;
 
@@ -95,8 +97,8 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
     this.autoMix = true;
     this.scode = null;
     this.tx0MaxOutputs = 0;
-    this.tx0FakeOutputRandomFactor = 0;
-    this.tx0FakeOutputMinValue = 10000;
+    this.tx0MaxRetry = 5;
+    this.tx0StrictMode = true;
     this.overspend = new LinkedHashMap<String, Long>();
 
     // technical settings
@@ -109,7 +111,7 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
     this.feeFallback = 75;
 
     this.resyncOnFirstRun = false;
-    this.strictMode = true;
+    this.postmixIndexAutoFix = true;
     this.persistDelaySeconds = 10;
     this.partner = WhirlpoolProtocol.PARTNER_ID_SAMOURAI;
 
@@ -127,6 +129,21 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
     // require autoTx0PoolId for autoTx0Aggregate
     if (autoTx0Aggregate && StringUtils.isEmpty(autoTx0PoolId)) {
       throw new RuntimeException("--auto-tx0 is required for --auto-tx0-aggregate");
+    }
+
+    // verify JCE provider doesn't throw any exception
+    try {
+      ECKey ecKey = new ECKey();
+      secretPointFactory
+          .newSecretPoint(ecKey.getPrivKeyBytes(), ecKey.getPubKey())
+          .ECDHSecretAsBytes();
+    } catch (Exception e) {
+      log.error("secretPointFactory not supported", e);
+      String javaVersion = System.getProperty("java.version");
+      throw new NotifiableException(
+          "Java version not supported, please use a another Java runtime (current: "
+              + javaVersion
+              + ", recommended: OpenJDK 8-11).");
     }
   }
 
@@ -242,20 +259,20 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
     this.tx0MaxOutputs = tx0MaxOutputs;
   }
 
-  public int getTx0FakeOutputRandomFactor() {
-    return tx0FakeOutputRandomFactor;
+  public int getTx0MaxRetry() {
+    return tx0MaxRetry;
   }
 
-  public void setTx0FakeOutputRandomFactor(int tx0FakeOutputRandomFactor) {
-    this.tx0FakeOutputRandomFactor = tx0FakeOutputRandomFactor;
+  public void setTx0MaxRetry(int tx0MaxRetry) {
+    this.tx0MaxRetry = tx0MaxRetry;
   }
 
-  public int getTx0FakeOutputMinValue() {
-    return tx0FakeOutputMinValue;
+  public boolean isTx0StrictMode() {
+    return tx0StrictMode;
   }
 
-  public void setTx0FakeOutputMinValue(int tx0FakeOutputMinValue) {
-    this.tx0FakeOutputMinValue = tx0FakeOutputMinValue;
+  public void setTx0StrictMode(boolean tx0StrictMode) {
+    this.tx0StrictMode = tx0StrictMode;
   }
 
   public Long getOverspend(String poolId) {
@@ -322,12 +339,12 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
     this.resyncOnFirstRun = resyncOnFirstRun;
   }
 
-  public boolean isStrictMode() {
-    return strictMode;
+  public boolean isPostmixIndexAutoFix() {
+    return postmixIndexAutoFix;
   }
 
-  public void setStrictMode(boolean strictMode) {
-    this.strictMode = strictMode;
+  public void setPostmixIndexAutoFix(boolean postmixIndexAutoFix) {
+    this.postmixIndexAutoFix = postmixIndexAutoFix;
   }
 
   public int getPersistDelaySeconds() {
@@ -392,18 +409,20 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
             + isAutoMix()
             + ", scode="
             + (scode != null ? ClientUtils.maskString(scode) : "null")
-            + ", tx0MaxOutputs="
-            + tx0MaxOutputs
-            + ", tx0FakeOutputRandomFactor="
-            + tx0FakeOutputRandomFactor
-            + ", tx0FakeOutputMinValue="
-            + tx0FakeOutputMinValue
             + ", overspend="
             + (overspend != null ? overspend.toString() : "null"));
     configInfo.put(
+        "tx0",
+        "tx0MaxOutputs="
+            + tx0MaxOutputs
+            + ", tx0MaxRetry="
+            + tx0MaxRetry
+            + ", tx0StrictMode="
+            + tx0StrictMode);
+    configInfo.put(
         "fee", "fallback=" + getFeeFallback() + ", min=" + getFeeMin() + ", max=" + getFeeMax());
     configInfo.put("resyncOnFirstRun", Boolean.toString(resyncOnFirstRun));
-    configInfo.put("strictMode", Boolean.toString(strictMode));
+    configInfo.put("autoFixPostmixIndex", Boolean.toString(postmixIndexAutoFix));
     configInfo.put("persistDelaySeconds", Integer.toString(persistDelaySeconds));
     return configInfo;
   }
