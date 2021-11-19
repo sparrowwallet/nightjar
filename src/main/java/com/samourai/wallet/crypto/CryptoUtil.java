@@ -6,6 +6,7 @@ import com.samourai.wallet.util.RandomUtil;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.Sha256Hash;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.provider.JCEECPrivateKey;
 import org.bouncycastle.jce.provider.JCEECPublicKey;
 import org.slf4j.Logger;
@@ -88,7 +89,7 @@ public class CryptoUtil {
         JCEECPrivateKey ecPrivKey = new JCEECPrivateKey(privateKey);
         JCEECPublicKey ecPubKey = new JCEECPublicKey(publicKey);
 
-        KeyAgreement aKeyAgree = KeyAgreement.getInstance("ECDH");
+        KeyAgreement aKeyAgree = KeyAgreement.getInstance("ECDH", new BouncyCastleProvider());
         aKeyAgree.init(ecPrivKey);
         aKeyAgree.doPhase(ecPubKey, true);
 
