@@ -72,10 +72,6 @@ public class STONEWALLx2 extends Cahoots {
 
         Transaction transaction = new Transaction(params);
         transaction.setVersion(2);
-        String strBlockHeight = System.getProperty(BLOCK_HEIGHT_PROPERTY);
-        if(strBlockHeight != null) {
-            transaction.setLockTime(Long.parseLong(strBlockHeight));
-        }
         for(MyTransactionOutPoint outpoint : inputs.keySet())   {
             TransactionInput input = outpoint.computeSpendInput();
             input.setSequenceNumber(SEQUENCE_RBF_ENABLED);
@@ -84,6 +80,11 @@ public class STONEWALLx2 extends Cahoots {
         }
         for(_TransactionOutput output : outputs.keySet())   {
             transaction.addOutput(output);
+        }
+
+        String strBlockHeight = System.getProperty(BLOCK_HEIGHT_PROPERTY);
+        if(strBlockHeight != null) {
+            transaction.setLockTime(Long.parseLong(strBlockHeight));
         }
 
         PSBT psbt = new PSBT(transaction);
