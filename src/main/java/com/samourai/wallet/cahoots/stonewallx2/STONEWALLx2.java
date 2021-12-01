@@ -32,9 +32,6 @@ import java.util.List;
 public class STONEWALLx2 extends Cahoots {
     private static final Logger log = LoggerFactory.getLogger(STONEWALLx2.class);
 
-    public static final String BLOCK_HEIGHT_PROPERTY = "com.sparrowwallet.blockHeight";
-    public static final long SEQUENCE_RBF_ENABLED = 4294967293L;
-
     private STONEWALLx2()    { ; }
 
     public STONEWALLx2(STONEWALLx2 stonewall)    {

@@ -23,6 +23,9 @@ import java.util.HashMap;
 public abstract class Cahoots {
     private static final Logger log = LoggerFactory.getLogger(Cahoots.class);
 
+    protected static final String BLOCK_HEIGHT_PROPERTY = "com.sparrowwallet.blockHeight";
+    protected static final long SEQUENCE_RBF_ENABLED = 4294967293L;
+
     protected int version = 2;
     protected long ts = -1L;
     protected String strID = null;
