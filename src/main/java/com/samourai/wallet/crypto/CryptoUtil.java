@@ -89,7 +89,7 @@ public class CryptoUtil {
         JCEECPrivateKey ecPrivKey = new JCEECPrivateKey(privateKey);
         JCEECPublicKey ecPubKey = new JCEECPublicKey(publicKey);
 
-        KeyAgreement aKeyAgree = KeyAgreement.getInstance("ECDH", new BouncyCastleProvider());
+        KeyAgreement aKeyAgree = KeyAgreement.getInstance("ECDH", provider);
         aKeyAgree.init(ecPrivKey);
         aKeyAgree.doPhase(ecPubKey, true);
 
@@ -118,7 +118,7 @@ public class CryptoUtil {
         SecretKeySpec key = new SecretKeySpec(keyBytes, ALGO_CRYPTO);
         IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
 
-        Cipher cipher = Cipher.getInstance(CYPHER);
+        Cipher cipher = Cipher.getInstance(CYPHER, provider);
         cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
         return cipher.doFinal(data);
     }
@@ -127,14 +127,14 @@ public class CryptoUtil {
         SecretKeySpec key = new SecretKeySpec(keyBytes, ALGO_CRYPTO);
         IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
 
-        Cipher cipher = Cipher.getInstance(CYPHER);
+        Cipher cipher = Cipher.getInstance(CYPHER, provider);
         cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
         return cipher.doFinal(data);
     }
 
     private byte[] getHMAC (byte[] data, byte[] keyBytes, byte[] iv) throws Exception {
         SecretKeySpec keySpec = new SecretKeySpec(keyBytes, ALGO_HMAC);
-        Mac mac = Mac.getInstance(ALGO_HMAC);
+        Mac mac = Mac.getInstance(ALGO_HMAC, provider);
         mac.init(keySpec);
         byte[] ivData = ArrayUtils.addAll(iv, data);
         return mac.doFinal(ivData);
@@ -142,7 +142,7 @@ public class CryptoUtil {
 
     private void checkHMAC (byte[] hmac, byte[] data, byte[] keyBytes, byte[] iv) throws Exception {
         SecretKeySpec keySpec = new SecretKeySpec(keyBytes, ALGO_HMAC);
-        Mac mac = Mac.getInstance(ALGO_HMAC);
+        Mac mac = Mac.getInstance(ALGO_HMAC, provider);
         mac.init(keySpec);
         byte[] ivData = ArrayUtils.addAll(iv, data);
         byte[] result = mac.doFinal(ivData);
