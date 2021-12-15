@@ -47,10 +47,7 @@ public class StowawayService extends AbstractCahootsService<Stowaway> {
 
     @Override
     public Stowaway startCollaborator(CahootsWallet cahootsWallet, int account, Stowaway stowaway0) throws Exception {
-        if (account != 0) {
-            throw new Exception("Invalid Stowaway collaborator account");
-        }
-        Stowaway stowaway1 = doStowaway1(stowaway0, cahootsWallet);
+        Stowaway stowaway1 = doStowaway1(stowaway0, cahootsWallet, account);
         if (log.isDebugEnabled()) {
             log.debug("# Stowaway COUNTERPARTY => step="+stowaway1.getStep());
         }
@@ -106,13 +103,13 @@ public class StowawayService extends AbstractCahootsService<Stowaway> {
     //
     // receiver
     //
-    private Stowaway doStowaway1(Stowaway stowaway0, CahootsWallet cahootsWallet) throws Exception {
+    private Stowaway doStowaway1(Stowaway stowaway0, CahootsWallet cahootsWallet, int account) throws Exception {
         HD_Wallet bip84Wallet = cahootsWallet.getBip84Wallet();
 
         byte[] fingerprint = bip84Wallet.getFingerprint();
         stowaway0.setFingerprintCollab(fingerprint);
 
-        List<CahootsUtxo> utxos = cahootsWallet.getUtxosWpkhByAccount(0);
+        List<CahootsUtxo> utxos = cahootsWallet.getUtxosWpkhByAccount(account);
         // sort in descending order by value
         Collections.sort(utxos, new UTXO.UTXOComparator());
         if (log.isDebugEnabled()) {
@@ -174,14 +171,15 @@ public class StowawayService extends AbstractCahootsService<Stowaway> {
         }
 
         // destination output
-        int idx = bip84Wallet.getAccount(0).getReceive().getAddrIdx();
-        SegwitAddress segwitAddress = bip84Wallet.getSegwitAddressAt(0,0, idx);
+        int idx = bip84Wallet.getAccount(account).getReceive().getAddrIdx();
+        SegwitAddress segwitAddress = bip84Wallet.getSegwitAddressAt(account, 0, idx);
         HashMap<_TransactionOutput, Triple<byte[], byte[], String>> outputsA = new HashMap<_TransactionOutput, Triple<byte[], byte[], String>>();
         byte[] scriptPubKey_A = bech32Util.computeScriptPubKey(segwitAddress.getBech32AsString(), params);
         _TransactionOutput output_A0 = new _TransactionOutput(params, null, Coin.valueOf(stowaway0.getSpendAmount()), scriptPubKey_A);
         outputsA.put(output_A0, Triple.of(segwitAddress.getECKey().getPubKey(), stowaway0.getFingerprintCollab(), "M/0/" + idx));
 
         stowaway0.setDestination(segwitAddress.getBech32AsString());
+        stowaway0.setCounterpartyAccount(account);
 
         Stowaway stowaway1 = new Stowaway(stowaway0);
         stowaway1.doStep1(inputsA, outputsA);
@@ -337,7 +335,7 @@ public class StowawayService extends AbstractCahootsService<Stowaway> {
     // receiver
     //
     private Stowaway doStowaway3(Stowaway stowaway2, CahootsWallet cahootsWallet) throws Exception {
-        List<CahootsUtxo> utxos = cahootsWallet.getUtxosWpkhByAccount(0);
+        List<CahootsUtxo> utxos = cahootsWallet.getUtxosWpkhByAccount(stowaway2.getCounterpartyAccount());
         HashMap<String, ECKey> keyBag_A = computeKeyBag(stowaway2, utxos);
 
         Stowaway stowaway3 = new Stowaway(stowaway2);
