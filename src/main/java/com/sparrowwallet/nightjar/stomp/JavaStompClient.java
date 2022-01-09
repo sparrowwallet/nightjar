@@ -50,6 +50,7 @@ public class JavaStompClient implements IStompClient {
         StompHeaders stompHeadersObj = computeStompHeaders(stompHeaders);
         try {
             this.stompClient = computeStompClient();
+            this.stompClient.start();
             this.stompSession = stompClient.connect(url, httpHeaders, stompHeadersObj, computeStompSessionHandler(onConnectOnDisconnectListener)).get();
         } catch(Exception e) {
             // connexion failed
@@ -137,12 +138,12 @@ public class JavaStompClient implements IStompClient {
         if(log.isDebugEnabled()) {
             log.debug("Using websocket transports: Websocket, XHR");
         }
-        JettyWebSocketClient jettyWebSocketClient = new JettyWebSocketClient(new WebSocketClient(jettyHttpClient));
+        WebSocketClient webSocketClient = new WebSocketClient(jettyHttpClient);
+        webSocketClient.setStopAtShutdown(false);
+        JettyWebSocketClient jettyWebSocketClient = new JettyWebSocketClient(webSocketClient);
         List<Transport> webSocketTransports = Arrays.asList(new WebSocketTransport(jettyWebSocketClient), new JettyXhrTransport(jettyHttpClient));
 
-        SockJsClient sockJsClient = new SockJsClient(webSocketTransports);
-        jettyWebSocketClient.start();
-        return sockJsClient;
+        return new SockJsClient(webSocketTransports);
     }
 
     private WebSocketHttpHeaders computeHttpHeaders() {
