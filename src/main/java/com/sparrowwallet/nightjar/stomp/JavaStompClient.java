@@ -141,7 +141,7 @@ public class JavaStompClient implements IStompClient {
         WebSocketClient webSocketClient = new WebSocketClient(jettyHttpClient);
         webSocketClient.setStopAtShutdown(false);
         JettyWebSocketClient jettyWebSocketClient = new JettyWebSocketClient(webSocketClient);
-        List<Transport> webSocketTransports = Arrays.asList(new WebSocketTransport(jettyWebSocketClient), new JettyXhrTransport(jettyHttpClient));
+        List<Transport> webSocketTransports = Arrays.asList(new WebSocketTransport(jettyWebSocketClient), new JavaXhrTransport(jettyHttpClient));
 
         return new SockJsClient(webSocketTransports);
     }
