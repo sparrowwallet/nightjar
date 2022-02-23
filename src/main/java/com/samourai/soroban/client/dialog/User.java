@@ -10,16 +10,19 @@ import org.bitcoinj.core.NetworkParameters;
 public class User {
   private BIP47UtilGeneric bip47Util;
   private BIP47Wallet bip47Wallet;
+  private int bip47Account;
   private NetworkParameters params;
   private Provider provider;
 
   public User(
       BIP47UtilGeneric bip47Util,
       BIP47Wallet bip47Wallet,
+      int bip47Account,
       NetworkParameters params,
       Provider provider) {
     this.bip47Util = bip47Util;
     this.bip47Wallet = bip47Wallet;
+    this.bip47Account = bip47Account;
     this.params = params;
     this.provider = provider;
   }
@@ -28,7 +31,7 @@ public class User {
       PaymentCode paymentCodeCounterparty, NetworkParameters params) throws Exception {
     SegwitAddress receiveAddress =
         bip47Util
-            .getReceiveAddress(bip47Wallet, paymentCodeCounterparty, 0, params)
+            .getReceiveAddress(bip47Wallet, bip47Account, paymentCodeCounterparty, 0, params)
             .getSegwitAddressReceive();
     return receiveAddress;
   }
@@ -37,16 +40,16 @@ public class User {
       PaymentCode paymentCodeInitiator, NetworkParameters params) throws Exception {
     SegwitAddress sendAddress =
         bip47Util
-            .getSendAddress(bip47Wallet, paymentCodeInitiator, 0, params)
+            .getSendAddress(bip47Wallet, bip47Account, paymentCodeInitiator, 0, params)
             .getSegwitAddressSend();
     return sendAddress;
   }
 
   public Encrypter getEncrypter(PaymentCode paymentCodePartner) {
-    return new PaynymEncrypter(bip47Wallet, paymentCodePartner, bip47Util, params, provider);
+    return new PaynymEncrypter(bip47Wallet, bip47Account, paymentCodePartner, bip47Util, params, provider);
   }
 
   public PaymentCode getPaymentCode() {
-    return bip47Util.getPaymentCode(bip47Wallet);
+    return bip47Util.getPaymentCode(bip47Wallet, bip47Account);
   }
 }

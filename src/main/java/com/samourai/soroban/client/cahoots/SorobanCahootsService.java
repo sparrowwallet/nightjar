@@ -44,12 +44,14 @@ public class SorobanCahootsService {
             cahootsWallet.getParams(),
             provider,
             cahootsWallet.getBip47Wallet(),
+            cahootsWallet.getBip47Account(),
             rpcClient),
         new SorobanMeetingService(
             bip47Util,
             cahootsWallet.getParams(),
             provider,
             cahootsWallet.getBip47Wallet(),
+            cahootsWallet.getBip47Account(),
             rpcClient));
   }
 

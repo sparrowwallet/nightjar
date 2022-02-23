@@ -20,11 +20,12 @@ public class PaynymEncrypter implements Encrypter {
 
   public PaynymEncrypter(
       BIP47Wallet bip47Wallet,
+      int bip47Account,
       PaymentCode paymentCodePartner,
       BIP47UtilGeneric bip47Util,
       NetworkParameters params,
       Provider provider) {
-    this.myKey = bip47Util.getNotificationAddress(bip47Wallet).getECKey();
+    this.myKey = bip47Util.getNotificationAddress(bip47Wallet, bip47Account).getECKey();
     this.partnerKey = paymentCodePartner.notificationAddress(params).getECKey();
     this.cryptoUtil = CryptoUtil.getInstance(provider);
   }

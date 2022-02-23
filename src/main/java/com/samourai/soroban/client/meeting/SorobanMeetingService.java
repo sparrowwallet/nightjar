@@ -20,6 +20,7 @@ public class SorobanMeetingService {
   private BIP47UtilGeneric bip47Util;
   private RpcClient rpc;
   private BIP47Wallet bip47w;
+  private int bip47Account;
   private User user;
 
   public SorobanMeetingService(
@@ -27,15 +28,17 @@ public class SorobanMeetingService {
       NetworkParameters params,
       Provider provider,
       BIP47Wallet bip47w,
+      int bip47Account,
       RpcClient rpcClient) {
     this.bip47Util = bip47Util;
     this.bip47w = bip47w;
+    this.bip47Account = bip47Account;
     this.rpc = rpcClient;
-    this.user = new User(bip47Util, bip47w, params, provider);
+    this.user = new User(bip47Util, bip47w, bip47Account, params, provider);
   }
 
   private PaymentCode getMyPaymentCode() {
-    return bip47Util.getPaymentCode(bip47w);
+    return bip47Util.getPaymentCode(bip47w, bip47Account);
   }
 
   public Observable<SorobanRequestMessage> sendMeetingRequest(

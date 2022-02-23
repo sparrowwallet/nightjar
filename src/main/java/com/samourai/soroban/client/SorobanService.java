@@ -37,10 +37,11 @@ public class SorobanService {
       NetworkParameters params,
       Provider provider,
       BIP47Wallet bip47w,
+      int bip47Account,
       RpcClient rpcClient) {
     this.params = params;
     this.rpc = rpcClient;
-    this.user = new User(bip47Util, bip47w, params, provider);
+    this.user = new User(bip47Util, bip47w, bip47Account, params, provider);
     this.interactiveMessageProvider = null;
     this.onInteraction = BehaviorSubject.create();
   }

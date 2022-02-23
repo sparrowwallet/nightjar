@@ -77,6 +77,10 @@ public abstract class CahootsWallet {
         return bip47Wallet;
     }
 
+    public int getBip47Account() {
+        return 0;
+    }
+
     public List<CahootsUtxo> getUtxosWpkhByAccount(int account) {
         return filterUtxosWpkh(fetchUtxos(account));
     }
