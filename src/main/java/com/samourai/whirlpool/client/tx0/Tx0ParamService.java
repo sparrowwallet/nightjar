@@ -61,4 +61,8 @@ public class Tx0ParamService {
     log.error("Unknown account for whirlpoolUtxo:" + whirlpoolUtxo);
     return false;
   }
+
+  public ITx0ParamServiceConfig getConfig() {
+    return config;
+  }
 }

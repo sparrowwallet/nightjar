@@ -41,6 +41,17 @@ public abstract class BasicUtxoSupplier extends BasicSupplier<UtxoData>
   private Map<String, WhirlpoolUtxo> previousUtxos;
 
   public BasicUtxoSupplier(
+          WalletSupplier walletSupplier,
+          UtxoConfigSupplier utxoConfigSupplier,
+          ChainSupplier chainSupplier,
+          PoolSupplier poolSupplier,
+          Tx0ParamService tx0ParamService)
+          throws Exception {
+      this(walletSupplier, utxoConfigSupplier, chainSupplier, poolSupplier, tx0ParamService,
+              tx0ParamService.getConfig().getNetworkParameters());
+  }
+
+  public BasicUtxoSupplier(
       WalletSupplier walletSupplier,
       UtxoConfigSupplier utxoConfigSupplier,
       ChainSupplier chainSupplier,
@@ -165,8 +176,17 @@ public abstract class BasicUtxoSupplier extends BasicSupplier<UtxoData>
     if (whirlpoolUtxo == null) {
       throw new Exception("Utxo not found: " + utxoHash + ":" + utxoIndex);
     }
+    byte[] privKeyBytes = _getPrivKeyBytes(whirlpoolUtxo);
+    if(privKeyBytes != null) {
+        return ECKey.fromPrivate(privKeyBytes);
+    }
+
     HD_Address premixAddress = getAddress(whirlpoolUtxo);
     return premixAddress.getECKey();
+  }
+
+  protected byte[] _getPrivKeyBytes(WhirlpoolUtxo whirlpoolUtxo) {
+      return null;
   }
 
   private HD_Address getAddress(WhirlpoolUtxo whirlpoolUtxo) {
