@@ -7,8 +7,6 @@ import com.samourai.whirlpool.client.utils.ClientUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -86,7 +84,7 @@ public class JavaHttpClientService implements IHttpClientService {
         jettyHttpClient.setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", true));
 
         // prevent user-agent tracking
-        jettyHttpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, userAgent));
+        // jettyHttpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, userAgent));
 
         // proxy
         if(proxy != null) {
