@@ -90,10 +90,6 @@ public class CharSequenceX implements CharSequence {
         return s;
     }
 
-    protected void finalize() {
-        zap();
-    }
-
     private void fill(char c) {
         for(int i = 0; i < chars.length; i++) {
             chars[i] = c;
