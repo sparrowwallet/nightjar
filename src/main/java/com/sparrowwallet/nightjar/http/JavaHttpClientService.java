@@ -24,10 +24,17 @@ public class JavaHttpClientService implements IHttpClientService {
 
     private final Map<HttpUsage, JavaHttpClient> httpClients;
     private HostAndPort torProxy;
+    private long requestTimeout = 30000;
 
     public JavaHttpClientService(HostAndPort torProxy) {
         this.httpClients = new ConcurrentHashMap<>();
         this.torProxy = torProxy;
+    }
+
+    public JavaHttpClientService(HostAndPort torProxy, long requestTimeout) {
+        this.httpClients = new ConcurrentHashMap<>();
+        this.torProxy = torProxy;
+        this.requestTimeout = requestTimeout;
     }
 
     public HostAndPort getTorProxy() {
@@ -53,7 +60,7 @@ public class JavaHttpClientService implements IHttpClientService {
 
     private JavaHttpClient computeHttpClient(HttpUsage httpUsage) {
         HttpClient httpClient = computeHttpClient(httpUsage, torProxy);
-        return new JavaHttpClient(httpUsage, httpClient, 30000);
+        return new JavaHttpClient(httpUsage, httpClient, requestTimeout);
     }
 
     public void changeIdentityRest() {
