@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.samourai.wallet.whirlpool.WhirlpoolConst.WHIRLPOOL_POSTMIX_ACCOUNT;
+
 public class StowawayService extends AbstractCahootsService<Stowaway> {
     private static final Logger log = LoggerFactory.getLogger(StowawayService.class);
     private static final Bech32UtilGeneric bech32Util = Bech32UtilGeneric.getInstance();
@@ -171,8 +173,9 @@ public class StowawayService extends AbstractCahootsService<Stowaway> {
         }
 
         // destination output
-        int idx = bip84Wallet.getAccount(account).getReceive().getAddrIdx();
-        SegwitAddress segwitAddress = bip84Wallet.getSegwitAddressAt(account, 0, idx);
+        int receiveAccount = getReceiveAccount(account);
+        int idx = bip84Wallet.getAccount(receiveAccount).getReceive().getAddrIdx();
+        SegwitAddress segwitAddress = bip84Wallet.getSegwitAddressAt(receiveAccount, 0, idx);
         HashMap<_TransactionOutput, Triple<byte[], byte[], String>> outputsA = new HashMap<_TransactionOutput, Triple<byte[], byte[], String>>();
         byte[] scriptPubKey_A = bech32Util.computeScriptPubKey(segwitAddress.getBech32AsString(), params);
         _TransactionOutput output_A0 = new _TransactionOutput(params, null, Coin.valueOf(stowaway0.getSpendAmount()), scriptPubKey_A);
@@ -363,4 +366,7 @@ public class StowawayService extends AbstractCahootsService<Stowaway> {
         return stowaway4;
     }
 
+    protected int getReceiveAccount(int account) {
+        return account == WHIRLPOOL_POSTMIX_ACCOUNT ? 0 : account;
+    }
 }

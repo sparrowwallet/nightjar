@@ -69,7 +69,7 @@ public abstract class AbstractCahootsService<T extends Cahoots> {
             }
         }
 
-        int myAccount = typeUser.equals(CahootsTypeUser.SENDER) ? cahoots.getAccount() : cahoots.getCounterpartyAccount();
+        int myAccount = typeUser.equals(CahootsTypeUser.SENDER) ? cahoots.getAccount() : getReceiveAccount(cahoots.getCounterpartyAccount());
         List<String> myOutputAddresses = computeMyOutputAddresses(cahootsWallet, myAccount);
 
         for(TransactionOutput output : transaction.getOutputs()) {
@@ -118,5 +118,9 @@ public abstract class AbstractCahootsService<T extends Cahoots> {
             }
         }
         return addresses;
+    }
+
+    protected int getReceiveAccount(int account) {
+        return account;
     }
 }
