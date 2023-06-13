@@ -120,4 +120,8 @@ public class HD_Address {
     public static String getPathFull(int purpose, int coinType, int account, int chain, int address) {
         return "m/"+purpose+"'/"+coinType+"'/"+account+"'/"+chain+"/"+address;
     }
+
+    public NetworkParameters getParams() {
+        return mParams;
+    }
 }

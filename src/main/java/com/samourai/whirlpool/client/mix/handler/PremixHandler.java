@@ -1,20 +1,21 @@
 package com.samourai.whirlpool.client.mix.handler;
 
-import com.samourai.wallet.segwit.SegwitAddress;
+import com.samourai.wallet.hd.HD_Address;
 import com.samourai.whirlpool.client.utils.ClientUtils;
 import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.TransactionSignature;
-import org.bitcoinj.script.Script;
 
 public class PremixHandler implements IPremixHandler {
   private UtxoWithBalance utxo;
-  private ECKey utxoKey;
+  private HD_Address utxoAddress;
   private String userPreHash;
+  private SigningHandler signingHandler;
 
-  public PremixHandler(UtxoWithBalance utxo, ECKey utxoKey, String userPreHash) {
+  public PremixHandler(UtxoWithBalance utxo, HD_Address utxoAddress, String userPreHash, SigningHandler signingHandler) {
     this.utxo = utxo;
-    this.utxoKey = utxoKey;
+    this.utxoAddress = utxoAddress;
     this.userPreHash = userPreHash;
+    this.signingHandler = signingHandler;
   }
 
   @Override
@@ -27,19 +28,14 @@ public class PremixHandler implements IPremixHandler {
       throws Exception {
     // TODO SendFactoryGeneric.getInstance().signInput(utxoKey, params, tx, inputIndex);
     long spendAmount = utxo.getBalance();
-    signInputSegwit(tx, inputIndex, utxoKey, spendAmount, params);
+    signInputSegwit(tx, inputIndex, utxoAddress.getECKey(), spendAmount, params);
   }
 
   // TODO
   protected void signInputSegwit(
           Transaction tx, int inputIdx, ECKey ecKey, long spendAmount, NetworkParameters params) {
-    final SegwitAddress segwitAddress = new SegwitAddress(ecKey, params);
-    final Script redeemScript = segwitAddress.segWitRedeemScript();
-    final Script scriptCode = redeemScript.scriptCode();
-
-    TransactionSignature sig =
-        tx.calculateWitnessSignature(
-            inputIdx, ecKey, scriptCode, Coin.valueOf(spendAmount), Transaction.SigHash.ALL, false);
+    byte[] sigBytes = signingHandler.signMixTransaction(tx.bitcoinSerialize(), inputIdx, utxoAddress, spendAmount);
+    TransactionSignature sig = TransactionSignature.decodeFromBitcoin(sigBytes, false, false);
     final TransactionWitness witness = new TransactionWitness(2);
     witness.setPush(0, sig.encodeToBitcoin());
     witness.setPush(1, ecKey.getPubKey());
@@ -48,7 +44,7 @@ public class PremixHandler implements IPremixHandler {
 
   @Override
   public String signMessage(String message) {
-    return utxoKey.signMessage(message);
+    return signingHandler.signMessage(utxoAddress, message);
   }
 
   @Override

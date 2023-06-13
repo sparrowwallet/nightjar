@@ -1,5 +1,6 @@
 package com.samourai.wallet.send.provider;
 
+import com.samourai.wallet.hd.HD_Address;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.TransactionOutPoint;
 
@@ -17,4 +18,9 @@ public class SimpleUtxoKeyProvider implements UtxoKeyProvider {
   public ECKey _getPrivKey(String utxoHash, int utxoIndex) throws Exception {
     return keys.get(utxoHash + ":" + utxoIndex);
   }
+
+    @Override
+    public HD_Address getAddress(String utxoHash, int utxoIndex) throws Exception {
+        return null;
+    }
 }

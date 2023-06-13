@@ -45,6 +45,24 @@ public class XorMask {
     return dataMasked;
   }
 
+  public byte[] mask(
+      byte[] dataToMask,
+      String paymentCodeOfSecretAccount,
+      NetworkParameters params,
+      HD_Address address,
+      TransactionOutPoint input0OutPoint)
+      throws Exception {
+    HD_Address notifAddressCli =
+        new PaymentCode(paymentCodeOfSecretAccount).notificationAddress(params);
+    ISecretPoint secretPointMask =
+        secretPointFactory.newSecretPoint(address, notifAddressCli.getPubKey());
+    byte[] dataMasked = PaymentCode.xorMask(dataToMask, secretPointMask, input0OutPoint);
+    if (dataMasked == null) {
+      throw new Exception("xorMask failed");
+    }
+    return dataMasked;
+  }
+
   public byte[] unmask(
       byte[] dataMasked,
       BIP47Account secretAccount,

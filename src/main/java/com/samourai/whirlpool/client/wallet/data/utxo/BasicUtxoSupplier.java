@@ -185,6 +185,16 @@ public abstract class BasicUtxoSupplier extends BasicSupplier<UtxoData>
     return premixAddress.getECKey();
   }
 
+  @Override
+  public HD_Address getAddress(String utxoHash, int utxoIndex) throws Exception {
+    WhirlpoolUtxo whirlpoolUtxo = findUtxo(utxoHash, utxoIndex);
+    if (whirlpoolUtxo == null) {
+       throw new Exception("Utxo not found: " + utxoHash + ":" + utxoIndex);
+    }
+
+    return getAddress(whirlpoolUtxo);
+  }
+
   protected byte[] _getPrivKeyBytes(WhirlpoolUtxo whirlpoolUtxo) {
       return null;
   }

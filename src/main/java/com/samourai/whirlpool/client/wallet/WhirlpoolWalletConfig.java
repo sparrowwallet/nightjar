@@ -7,6 +7,8 @@ import com.samourai.wallet.bip47.rpc.java.SecretPointFactoryJava;
 import com.samourai.wallet.bip47.rpc.secretPoint.ISecretPointFactory;
 import com.samourai.wallet.util.FormatsUtilGeneric;
 import com.samourai.whirlpool.client.exception.NotifiableException;
+import com.samourai.whirlpool.client.mix.handler.DefaultSigningHandler;
+import com.samourai.whirlpool.client.mix.handler.SigningHandler;
 import com.samourai.whirlpool.client.tx0.ITx0ParamServiceConfig;
 import com.samourai.whirlpool.client.utils.ClientUtils;
 import com.samourai.whirlpool.client.wallet.beans.IndexRange;
@@ -31,6 +33,7 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
 
   private DataSourceFactory dataSourceFactory;
   private DataPersisterFactory dataPersisterFactory;
+  private SigningHandler signingHandler = new DefaultSigningHandler();
   private boolean mobile;
 
   private int maxClients;
@@ -370,6 +373,14 @@ public class WhirlpoolWalletConfig extends WhirlpoolClientConfig implements ITx0
   public void setSecretPointFactory(ISecretPointFactory secretPointFactory) {
     this.secretPointFactory = secretPointFactory;
   }
+
+  public SigningHandler getSigningHandler() {
+        return signingHandler;
+    }
+
+  public void setSigningHandler(SigningHandler signingHandler) {
+        this.signingHandler = signingHandler;
+    }
 
   public Map<String, String> getConfigInfo() {
     Map<String, String> configInfo = new LinkedHashMap<String, String>();

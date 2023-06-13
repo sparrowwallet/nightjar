@@ -22,7 +22,7 @@ public class BipWallet {
       IIndexHandler indexChangeHandler,
       AddressType addressType) {
     this.account = account;
-    this.bipWallet = new HD_Wallet(addressType.getPurpose(), bip44w);
+    this.bipWallet = bip44w.getSeed() == null ? new HD_Wallet(bip44w.getParams(), bip44w.getAccounts()) : new HD_Wallet(addressType.getPurpose(), bip44w);
     this.indexHandler = indexHandler;
     this.indexChangeHandler = indexChangeHandler;
   }

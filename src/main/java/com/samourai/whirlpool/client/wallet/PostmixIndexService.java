@@ -51,7 +51,7 @@ public class PostmixIndexService {
     }
     HD_Address hdAddress = walletPostmix.getAddressAt(Chain.RECEIVE.getIndex(), postmixIndex);
     String outputAddress = bech32Util.toBech32(hdAddress, config.getNetworkParameters());
-    String signature = hdAddress.getECKey().signMessage(outputAddress);
+    String signature = config.getSigningHandler().signMessage(hdAddress, outputAddress);
     CheckOutputRequest checkOutputRequest = new CheckOutputRequest(outputAddress, signature);
     return config.getServerApi().checkOutput(checkOutputRequest);
   }

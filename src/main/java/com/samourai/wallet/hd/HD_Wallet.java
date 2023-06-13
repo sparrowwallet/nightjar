@@ -10,10 +10,7 @@ import org.bitcoinj.crypto.*;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class HD_Wallet {
     private byte[] mSeed = null;
@@ -75,6 +72,21 @@ public class HD_Wallet {
         }
     }
 
+    public HD_Wallet(NetworkParameters params, Map<Integer, HD_Account> xpub) throws AddressFormatException {
+        mParams = params;
+
+        // initialize mAccounts and xpubs
+        mAccounts = new LinkedHashMap<>();
+        xpubs = new String[xpub.size()];
+        List<Integer> indexList = new ArrayList<>(xpub.keySet());
+        for(int i = 0; i < indexList.size(); i++) {
+            Integer accountIndex = indexList.get(i);
+            HD_Account account = new HD_Account(mParams, xpub.get(accountIndex).strXPUB, accountIndex);
+            mAccounts.put(accountIndex, account);
+            xpubs[i] = account.xpubstr();
+        }
+    }
+
     private static DeterministicKey computeRootKey(int purpose, List<String> mWordList, String strPassphrase, NetworkParameters params) {
         byte[] hd_seed = MnemonicCode.toSeed(mWordList, strPassphrase);
         DeterministicKey mKey = HDKeyDerivation.createMasterPrivateKey(hd_seed);
@@ -102,6 +114,10 @@ public class HD_Wallet {
 
     public NetworkParameters getParams() {
         return mParams;
+    }
+
+    public Map<Integer, HD_Account> getAccounts() {
+        return mAccounts;
     }
 
     public HD_Account getAccount(int accountIdx) {

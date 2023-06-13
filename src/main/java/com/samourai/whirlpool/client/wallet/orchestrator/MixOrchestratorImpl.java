@@ -204,7 +204,7 @@ public class MixOrchestratorImpl extends MixOrchestrator {
     String premix00Bech32 = Bech32UtilGeneric.getInstance().toBech32(premix00, params);
     String userPreHash = ClientUtils.sha256Hash(premix00Bech32);
 
-    return new PremixHandler(utxoWithBalance, premixKey, userPreHash);
+    return new PremixHandler(utxoWithBalance, premixAddress, userPreHash, whirlpoolWallet.getConfig().getSigningHandler());
   }
 
   private IPostmixHandler computePostmixHandler(WhirlpoolUtxo whirlpoolUtxo) {

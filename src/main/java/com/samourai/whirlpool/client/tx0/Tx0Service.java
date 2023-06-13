@@ -36,14 +36,12 @@ public class Tx0Service {
 
   private final Bech32UtilGeneric bech32Util = Bech32UtilGeneric.getInstance();
   private final FormatsUtilGeneric formatsUtilGeneric = FormatsUtilGeneric.getInstance();
-  private final XorMask xorMask;
   private final FeeUtil feeUtil = FeeUtil.getInstance();
 
   private WhirlpoolWalletConfig config;
 
   public Tx0Service(WhirlpoolWalletConfig config) {
     this.config = config;
-    xorMask = XorMask.getInstance(config.getSecretPointFactory());
   }
 
   private int computeNbPremixMax(
@@ -275,12 +273,19 @@ public class Tx0Service {
     ECKey firstInputKey = utxoKeyProvider._getPrivKey(firstInput.tx_hash, firstInput.tx_output_n);
     String feePaymentCode = tx0Data.getFeePaymentCode();
     byte[] feePayload = tx0Data.getFeePayload();
-    byte[] feePayloadMasked =
+    XorMask xorMask = XorMask.getInstance(config.getSecretPointFactory());
+    byte[] feePayloadMasked = firstInputKey.hasPrivKey() ?
         xorMask.mask(
             feePayload,
             feePaymentCode,
             params,
             firstInputKey.getPrivKeyBytes(),
+            firstInput.computeOutpoint(params)) :
+        xorMask.mask(
+            feePayload,
+            feePaymentCode,
+            params,
+            utxoKeyProvider.getAddress(firstInput.tx_hash, firstInput.tx_output_n),
             firstInput.computeOutpoint(params));
     if (log.isDebugEnabled()) {
       log.debug("feePayloadHex=" + Hex.toHexString(feePayload));
@@ -533,15 +538,15 @@ public class Tx0Service {
       }
     }
 
-    signTx0(tx, utxoKeyProvider);
+    tx = signTx0(tx, utxoKeyProvider);
     tx.verify();
 
     Tx0 tx0 = new Tx0(tx0Preview, tx, premixOutputs, changeOutputs);
     return tx0;
   }
 
-  protected void signTx0(Transaction tx, UtxoKeyProvider utxoKeyProvider) throws Exception {
-    SendFactoryGeneric.getInstance().signTransaction(tx, utxoKeyProvider);
+  protected Transaction signTx0(Transaction tx, UtxoKeyProvider utxoKeyProvider) throws Exception {
+      return config.getSigningHandler().signTx0Transaction(tx, utxoKeyProvider);
   }
 
   protected Collection<Tx0Data> fetchTx0Data(String partnerId) throws Exception {
