@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.MessageDigest;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -144,7 +145,7 @@ public class MnemonicCode {
         // derived key is 512 bits (= 64 bytes).
         //
         String pass = Utils.join(words);
-        String salt = "mnemonic" + passphrase;
+        String salt = "mnemonic" + Normalizer.normalize(passphrase, Normalizer.Form.NFKD);
 
         final Stopwatch watch = Stopwatch.createStarted();
         byte[] seed = PBKDF2SHA512.derive(pass, salt, PBKDF2_ROUNDS, 64);
