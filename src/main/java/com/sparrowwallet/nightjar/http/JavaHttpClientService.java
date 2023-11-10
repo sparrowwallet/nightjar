@@ -91,7 +91,7 @@ public class JavaHttpClientService implements IHttpClientService {
         jettyHttpClient.setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", true));
 
         // prevent user-agent tracking
-        // jettyHttpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, userAgent));
+        jettyHttpClient.setUserAgentField(null);
 
         // proxy
         if(proxy != null) {

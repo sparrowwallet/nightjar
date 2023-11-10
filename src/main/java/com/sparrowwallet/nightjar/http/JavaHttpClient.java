@@ -77,7 +77,7 @@ public class JavaHttpClient extends JacksonHttpClient {
     protected String requestJsonGet(String urlStr, Map<String, String> headers, boolean async) throws Exception {
         log.debug("GET " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.GET, headers);
-        return requestJson(req);
+        return makeRequest(req);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class JavaHttpClient extends JacksonHttpClient {
         log.debug("POST " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.POST, headers);
         req.content(new StringContentProvider(MediaType.APPLICATION_JSON_VALUE, jsonBody, StandardCharsets.UTF_8));
-        return requestJson(req);
+        return makeRequest(req);
     }
 
     @Override
@@ -93,7 +93,30 @@ public class JavaHttpClient extends JacksonHttpClient {
         log.debug("POST " + urlStr);
         Request req = computeHttpRequest(urlStr, HttpMethod.POST, headers);
         req.content(new FormContentProvider(computeBodyFields(body)));
-        return requestJson(req);
+        return makeRequest(req);
+    }
+
+    @Override
+    public String postString(String urlStr, Map<String, String> headers, String contentType, String content) throws HttpException {
+        try {
+            return requestPostString(urlStr, headers, contentType, content);
+        } catch (Exception e) {
+            onRequestError(e);
+            if (log.isDebugEnabled()) {
+                log.error("postString failed: " + urlStr + ":" + e.getMessage());
+            }
+            if (!(e instanceof HttpException)) {
+                e = new HttpException(e, null);
+            }
+            throw (HttpException) e;
+        }
+    }
+
+    protected String requestPostString(String urlStr, Map<String, String> headers, String contentType, String content) throws Exception {
+        log.debug("POST " + urlStr);
+        Request req = computeHttpRequest(urlStr, HttpMethod.POST, headers);
+        req.content(new StringContentProvider(content), contentType);
+        return makeRequest(req);
     }
 
     private Fields computeBodyFields(Map<String, String> body) {
@@ -104,12 +127,12 @@ public class JavaHttpClient extends JacksonHttpClient {
         return fields;
     }
 
-    private String requestJson(Request req) throws Exception {
+    private String makeRequest(Request req) throws Exception {
         ContentResponse response = req.send();
         if(response.getStatus() != HttpStatus.OK_200 && response.getStatus() != HttpStatus.CREATED_201 && response.getStatus() != HttpStatus.ACCEPTED_202) {
             String responseBody = response.getContentAsString();
             log.error("Http query failed: status=" + response.getStatus() + ", responseBody=" + responseBody);
-            throw new HttpException(new Exception("Http query failed: status=" + response.getStatus()), responseBody);
+            throw new JavaHttpException(new Exception("Http query failed: status=" + response.getStatus()), responseBody, response.getStatus());
         }
         return response.getContentAsString();
     }
