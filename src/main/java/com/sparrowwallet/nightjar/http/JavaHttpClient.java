@@ -131,7 +131,9 @@ public class JavaHttpClient extends JacksonHttpClient {
         ContentResponse response = req.send();
         if(response.getStatus() != HttpStatus.OK_200 && response.getStatus() != HttpStatus.CREATED_201 && response.getStatus() != HttpStatus.ACCEPTED_202) {
             String responseBody = response.getContentAsString();
-            log.error("Http query failed: status=" + response.getStatus() + ", responseBody=" + responseBody);
+            if(log.isDebugEnabled()) {
+                log.error("Http query failed: status=" + response.getStatus() + ", responseBody=" + responseBody);
+            }
             throw new JavaHttpException(new Exception("Http query failed: status=" + response.getStatus()), responseBody, response.getStatus());
         }
         return response.getContentAsString();
