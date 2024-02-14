@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.sparrowwallet.nightjar'
-version '0.2.39'
+version '0.2.40'
 
 repositories {
     mavenCentral()
@@ -17,11 +17,11 @@ file("publish.properties").withInputStream {
 }
 
 dependencies {
-    implementation ('org.bouncycastle:bcprov-jdk15on:1.64') {
+    implementation ('org.bouncycastle:bcprov-jdk18on:1.77') {
         exclude group: 'org.hamcrest', module: 'hamcrest-core'
     }
     implementation ('com.google.protobuf:protobuf-java:2.6.1')
-    implementation ('com.google.guava:guava:31.1-jre')
+    implementation ('com.google.guava:guava:33.0.0-jre')
     implementation ('com.lambdaworks:scrypt:1.4.0')
     implementation ('org.springframework:spring-websocket:5.2.2.RELEASE')
     implementation ('org.springframework:spring-messaging:5.2.2.RELEASE')
@@ -34,10 +34,10 @@ dependencies {
     implementation ('com.fasterxml.jackson.core:jackson-databind:2.13.2')
     implementation ('org.json:json:20180130')
     implementation ('io.reactivex.rxjava2:rxjava:2.2.15')
-    implementation ('org.slf4j:slf4j-api:1.7.30')
+    implementation ('org.slf4j:slf4j-api:2.0.12')
     implementation ('com.auth0:java-jwt:3.8.1')
     implementation('org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.20')
-    implementation ('ch.qos.logback:logback-classic:1.2.8') {
+    implementation ('ch.qos.logback:logback-classic:1.4.14') {
         exclude group: 'org.hamcrest', module: 'hamcrest-core'
         exclude group: 'org.slf4j'
     }
